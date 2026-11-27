@@ -31,7 +31,7 @@ SHARED_SOURCE = "experiments/probes/probe_optimized_serving/truncate_worker.py"
 # target: (recorded worker, truncated worker, sources bound into the compile identity)
 WORKERS = {
     "4b": (
-        "experiments.b200_gdn_fast.worker.FastGdnWorker",
+        "gleipnir.serving.stack.workers.gdn_fast.FastGdnWorker",
         "experiments.probes.probe_optimized_serving.truncate_worker.TruncatedFastGdnWorker",
         [SHARED_SOURCE],
     ),

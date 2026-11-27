@@ -4,10 +4,10 @@ import json
 import math
 import os
 
-from experiments.b200_attention_gdn_serving.worker import ROOT, write
-from experiments.b200_vllm031.worker import MigrationWorker
 from gleipnir.serving.fp4.attention import EXPECTED, ROWS, SHAPES, projection_identity
-from gleipnir.serving.sources import recorded_source_path
+from gleipnir.serving.sources import recorded_source_matches
+from gleipnir.serving.stack.workers.migration import MigrationWorker
+from gleipnir.serving.stack.workers.serving_audit import ROOT, write
 from gleipnir.serving.vllm.attention_precision import (
     AttentionBf16Method,
     AttentionFp8Method,
@@ -50,7 +50,7 @@ class AttentionPrecisionWorker(MigrationWorker):
     def load_model(self, *, load_dummy_weights: bool = False) -> None:
         import torch
 
-        from experiments.b200_inference_benchmark.run import sha
+        from gleipnir.data.monitoring import file_hash as sha
 
         condition = self.vllm_config.additional_config["serving_condition"]
         precision = condition["attention_projection_precision"]
@@ -58,7 +58,7 @@ class AttentionPrecisionWorker(MigrationWorker):
         receipt = json.loads((ROOT / path).read_text())
         validate_native(receipt, precision)
         for source, expected in receipt["sources"].items():
-            if sha(recorded_source_path(ROOT, source)) != expected:
+            if not recorded_source_matches(ROOT, source, expected):
                 raise ValueError(f"attention precision source drift: {source}")
         if receipt["gpu"] != torch.cuda.get_device_name():
             raise ValueError("attention precision native hardware changed")

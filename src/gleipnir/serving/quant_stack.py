@@ -27,6 +27,7 @@ from gleipnir.repository import repo_root
 from gleipnir.serving.bf16_stack import FastGdnMixin, LastQueryMixin
 from gleipnir.serving.bf16_worker import Bf16Worker
 from gleipnir.serving.fp4.attention import projection_identity
+from gleipnir.serving.sources import recorded_source_matches
 from gleipnir.serving.vllm import attention_precision
 from gleipnir.serving.vllm.attention_precision import AttentionFp8Method, fp8_linear
 from gleipnir.serving.vllm.frost_gdn_fp4 import CheckedGdnFp4Method, FrostGdnFp4Config
@@ -207,7 +208,7 @@ def mxfp8_receipt(root: Path, additional: dict, text: Any, gpu: str) -> dict:
     if receipt.get("gpu") != gpu:
         raise ValueError("MXFP8 receipt hardware changed")
     for source, expected in receipt["sources"].items():
-        if file_hash(root / source) != expected:
+        if not recorded_source_matches(root, source, expected):
             raise ValueError(f"MXFP8 validation source drift: {source}")
     return receipt
 
@@ -215,12 +216,12 @@ def mxfp8_receipt(root: Path, additional: dict, text: Any, gpu: str) -> dict:
 def mxfp8_long_context(root: Path, config: Any, text: Any, gpu: str) -> dict:
     """Raise the MXFP8 length bound after the served-heads envelope receipt.
 
-    The 4B 1M envelope (``experiments/b200_context_million/envelope.py``)
+    The 4B 1M envelope (``src/gleipnir/serving/stack/long_context_envelope.py``)
     changes only the descriptor/producer bound; its receipt here comes from
     ``experiments/serving/qwen38_27b_serving/mxfp8_envelope.py`` at the served heads.
     """
-    from experiments.b200_context_million.envelope import CHUNK, enable, validate
     from gleipnir.serving import mxfp8
+    from gleipnir.serving.stack.long_context_envelope import CHUNK, enable, validate
 
     limit = config.model_config.max_model_len
     binding = config.additional_config.get("mxfp8_long_context") or {}
@@ -331,7 +332,7 @@ class TunedGemmMixin:
         if receipt["gpu"] != torch.cuda.get_device_name():
             raise ValueError("FP4 GEMM tuning hardware changed")
         for source, digest in receipt["sources"].items():
-            if file_hash(ROOT / source) != digest:
+            if not recorded_source_matches(ROOT, source, digest):
                 raise ValueError(f"FP4 GEMM tuning source drift: {source}")
         super().load_model(load_dummy_weights=load_dummy_weights)
         audit = {
@@ -412,7 +413,7 @@ def producer_receipt(root: Path, additional: dict, text: Any, gpu: str) -> dict:
     if receipt.get("gpu") != gpu:
         raise ValueError("fused FP4 producer receipt hardware changed")
     for source, digest in receipt["sources"].items():
-        if file_hash(root / source) != digest:
+        if not recorded_source_matches(root, source, digest):
             raise ValueError(f"fused FP4 producer source drift: {source}")
     return {mode: modes[mode]["selected_warps"] for mode in ("silu", "norm")}
 
@@ -485,7 +486,7 @@ def swiglu_receipt(root: Path, additional: dict, text: Any, gpu: str) -> dict:
     if receipt.get("gpu") != gpu:
         raise ValueError("native SwiGLU receipt hardware changed")
     for source, digest in receipt["sources"].items():
-        if file_hash(root / source) != digest:
+        if not recorded_source_matches(root, source, digest):
             raise ValueError(f"native SwiGLU source drift: {source}")
     return {**selection, "kernel": receipt["kernel"]}
 

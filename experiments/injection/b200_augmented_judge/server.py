@@ -7,7 +7,7 @@ from pathlib import Path
 precision = os.environ["GLEIPNIR_JUDGE_PRECISION"]
 modules = {
     "bf16": "gleipnir.serving.bf16_server",
-    "optimized": "experiments.b200_attention_precision.server",
+    "optimized": "gleipnir.serving.stack.server",
 }
 importlib.import_module(modules[precision])
 

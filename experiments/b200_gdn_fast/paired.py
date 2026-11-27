@@ -32,7 +32,7 @@ def fast_command(command: list[str]) -> list[str]:
     worker = command.index("--worker-cls") + 1
     if not command[worker].endswith("GatedPrecisionWorker"):
         raise ValueError("selected worker changed")
-    command[worker] = "experiments.b200_gdn_fast.worker.FastGdnWorker"
+    command[worker] = "gleipnir.serving.stack.workers.gdn_fast.FastGdnWorker"
     return command
 
 

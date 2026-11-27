@@ -100,7 +100,8 @@ def test_experiment_registry_matches_the_tree():
             for p in (base / category).iterdir()
             if p.is_dir() and p.name != "__pycache__"
         }
-        assert on_disk == set(names), category
+        # New experiments start in a category; the registry lists moved ones.
+        assert set(names) <= on_disk, category
     kept = top - set(categories)
     assert not kept & set(EXPERIMENT_MOVES)
     names = [n for group in categories.values() for n in group] + sorted(kept)
@@ -110,11 +111,12 @@ def test_experiment_registry_matches_the_tree():
 def test_category_indexes_list_every_experiment():
     base, top, categories = _experiment_tree()
     index = (base / "README.md").read_text()
-    for category, names in categories.items():
+    for category in categories:
         assert f"({category}/)" in index
         listing = (base / category / "README.md").read_text()
-        for name in names:
-            assert f"[`{name}`]({name}/)" in listing, (category, name)
+        for path in (base / category).iterdir():
+            if path.is_dir() and path.name != "__pycache__":
+                assert f"[`{path.name}`]({path.name}/)" in listing, path
     for name in top - set(categories):
         assert f"({name}/)" in index, name
 
@@ -152,7 +154,7 @@ def test_recorded_flat_experiment_paths_translate():
     assert canonical_source_reference("experiments/cascade/cascade.py") == (
         "experiments/evaluation/cascade/cascade.py"
     )
-    kept = "experiments/b200_vllm031/scheduler.py"
+    kept = "experiments/b200_vllm031/validate.py"
     assert canonical_source_reference(kept) == kept
     assert canonical_source_reference("results/cascade/x.json") == (
         "results/cascade/x.json"

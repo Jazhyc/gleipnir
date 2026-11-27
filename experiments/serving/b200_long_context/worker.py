@@ -6,8 +6,8 @@ from pathlib import Path
 
 import torch
 
-from experiments.b200_monitor_score.worker import MonitorScoreAuditWorker
 from experiments.serving.b200_long_context.envelope import enable, validate
+from gleipnir.serving.stack.workers.monitor_score import MonitorScoreAuditWorker
 
 ROOT = next(
     p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()

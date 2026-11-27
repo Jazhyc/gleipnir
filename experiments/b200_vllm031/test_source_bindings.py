@@ -7,7 +7,7 @@ import tarfile
 
 import pytest
 
-from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
+from gleipnir.serving.stack.source_bindings import restore_diagnostic_sources
 
 
 def fixture(tmp_path, relative, archived=b"validated", expected=None):

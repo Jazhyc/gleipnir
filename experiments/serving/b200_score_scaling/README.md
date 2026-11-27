@@ -58,7 +58,7 @@ The old full scaling curve used 0.24/FP4 attention projections; label that recip
 difference and use the same-recipe archived FP8 c128 point separately. Stop on
 identity, canary, finite/token-count, native/server/OOM failure or completion.
 Retain a successful scorer warm and preserve caches. Run with the staged 0.31
-interpreter through `experiments.b200_vllm031.runtime -m
+interpreter through `gleipnir.serving.stack.environment -m
 experiments.serving.b200_score_scaling.current --name <run> --expected-gpu-uuid <live-uuid>`.
 Export the completed sweep's medians, ranges, quality deltas and standalone
 PNG/SVG curve with `python -m experiments.serving.b200_score_scaling.current_summary

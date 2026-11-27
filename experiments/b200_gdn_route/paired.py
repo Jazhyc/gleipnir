@@ -26,7 +26,7 @@ def gated_command(command: list[str]) -> list[str]:
     worker = command.index("--worker-cls") + 1
     if not command[worker].endswith("LastQueryPrecisionWorker"):
         raise ValueError("selected worker changed")
-    command[worker] = "experiments.b200_gdn_route.worker.GatedPrecisionWorker"
+    command[worker] = "gleipnir.serving.stack.workers.gdn_route.GatedPrecisionWorker"
     return command
 
 

@@ -8,11 +8,11 @@ import torch
 from safetensors import safe_open
 from vllm.tokenizers import get_tokenizer
 
-from experiments.b200_attention_gdn_serving.swiglu_native_output_worker import (
+from gleipnir.serving.monitor_score import DECISION_IDS, DECISION_TOKENS
+from gleipnir.serving.stack.workers.native_output import (
     NativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker,
 )
-from experiments.b200_attention_gdn_serving.worker import ROOT, write
-from gleipnir.serving.monitor_score import DECISION_IDS, DECISION_TOKENS
+from gleipnir.serving.stack.workers.serving_audit import ROOT, write
 
 
 class MonitorScoreAuditWorker(

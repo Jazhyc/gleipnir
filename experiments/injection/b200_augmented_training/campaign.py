@@ -94,7 +94,7 @@ def source_paths() -> list[str]:
     ]
     paths += [
         "experiments/injection/b200_apps/run.py",
-        "experiments/b200_vllm031/runtime.py",
+        "src/gleipnir/serving/stack/environment.py",
         "experiments/b200_attention_precision/startup.py",
     ]
     for directory in (

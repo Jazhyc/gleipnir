@@ -6,25 +6,25 @@ import os
 
 import torch
 
-from experiments.b200_attention_gdn_serving.attention_fp4_worker import (
+from gleipnir.serving.sources import recorded_source_matches
+from gleipnir.serving.stack.workers.attention_fp4 import (
     AttentionTunedPreparationMxfp8ServingAuditWorker,
 )
-from experiments.b200_attention_gdn_serving.worker import ROOT, write
-from gleipnir.serving.sources import recorded_source_path
+from gleipnir.serving.stack.workers.serving_audit import ROOT, write
 
 
 class NativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
     AttentionTunedPreparationMxfp8ServingAuditWorker
 ):
     def load_model(self, *, load_dummy_weights: bool = False) -> None:
-        from gleipnir.serving_fp4_swiglu_native_output import (
+        from gleipnir.serving.fp4.swiglu_native_output import (
             NativeOutputSwiGlu,
             load_kernel,
         )
-        from gleipnir.serving_fp4_swiglu_native_output_validation import validate_native
-        from gleipnir.serving_fp4_swiglu_overhead import OverheadSwiGlu
-        from gleipnir.serving_fp4_swiglu_overhead import load_kernel as load_overhead
-        from gleipnir.serving_fp4_swiglu_overhead_validation import (
+        from gleipnir.serving.fp4.swiglu_native_output_validation import validate_native
+        from gleipnir.serving.fp4.swiglu_overhead import OverheadSwiGlu
+        from gleipnir.serving.fp4.swiglu_overhead import load_kernel as load_overhead
+        from gleipnir.serving.fp4.swiglu_overhead_validation import (
             validate_native as validate_overhead,
         )
 
@@ -34,12 +34,7 @@ class NativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
         receipt = json.loads(raw)
         validate_native(receipt)
         for source, digest in receipt["sources"].items():
-            if (
-                hashlib.sha256(
-                    recorded_source_path(ROOT, source).read_bytes()
-                ).hexdigest()
-                != digest
-            ):
+            if not recorded_source_matches(ROOT, source, digest):
                 raise ValueError(f"symbolic SwiGLU source drift: {source}")
         if receipt["gpu"] != torch.cuda.get_device_name():
             raise ValueError("symbolic SwiGLU hardware changed")
@@ -54,12 +49,7 @@ class NativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
         )
         validate_overhead(previous)
         for source, digest in previous["sources"].items():
-            if (
-                hashlib.sha256(
-                    recorded_source_path(ROOT, source).read_bytes()
-                ).hexdigest()
-                != digest
-            ):
+            if not recorded_source_matches(ROOT, source, digest):
                 raise ValueError(f"medium-row SwiGLU source drift: {source}")
         reference_kernel, reference_hashes = load_overhead(
             ROOT,
@@ -68,7 +58,7 @@ class NativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
         if reference_hashes != previous["kernel"] or previous["gpu"] != receipt["gpu"]:
             raise ValueError("medium-row SwiGLU kernel/hardware drift")
         super().load_model(load_dummy_weights=load_dummy_weights)
-        from gleipnir.serving_fp4_swiglu_native_output_integration import install
+        from gleipnir.serving.fp4.swiglu_native_output_integration import install
 
         plan = NativeOutputSwiGlu(kernel)
         plan.compile()

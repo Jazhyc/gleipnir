@@ -7,10 +7,10 @@ import types
 from collections import Counter
 from pathlib import Path
 
-from experiments.b200_attention_gdn_serving.swiglu_native_output_worker import (
+from gleipnir.serving.stack.workers.native_output import (
     NativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker,
 )
-from experiments.b200_attention_gdn_serving.worker import ROOT, write
+from gleipnir.serving.stack.workers.serving_audit import ROOT, write
 from gleipnir.serving_prefill_graphs import (
     adapt_profile_cache_source,
     graph_padding_allowed,

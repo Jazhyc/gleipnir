@@ -72,7 +72,7 @@ def train(config: dict) -> None:
             [
                 config["serving_python"],
                 "-m",
-                "experiments.b200_vllm031.runtime",
+                "gleipnir.serving.stack.environment",
                 "-m",
                 "experiments.b200_vllm031.stop",
                 "--archive-name",
@@ -277,7 +277,7 @@ def main() -> None:
                 [
                     config["serving_python"],
                     "-m",
-                    "experiments.b200_vllm031.runtime",
+                    "gleipnir.serving.stack.environment",
                     "-m",
                     "experiments.injection.b200_augmented_training.evaluate",
                     "--stage",

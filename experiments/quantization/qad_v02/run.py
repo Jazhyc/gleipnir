@@ -225,7 +225,7 @@ def main():
     try:
         status("preparing")
         check(config)
-        from experiments.b200_vllm031.runtime import candidate_environment
+        from gleipnir.serving.stack.environment import candidate_environment
 
         status("baseline")
         if not (ROOT / "results" / BASELINE_ID / "evaluation/complete.json").exists():

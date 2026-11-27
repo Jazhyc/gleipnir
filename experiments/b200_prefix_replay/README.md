@@ -32,7 +32,7 @@ so score parity is required.
 
 ```bash
 PYTHONPATH=src:. python -m experiments.b200_prefix_replay.prepare
-PYTHONPATH=src:. <serving-python> -m experiments.b200_vllm031.runtime \
+PYTHONPATH=src:. <serving-python> -m gleipnir.serving.stack.environment \
   -m experiments.b200_prefix_replay.run --name replay01
 ```
 

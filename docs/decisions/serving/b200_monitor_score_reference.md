@@ -64,7 +64,7 @@ upstream GDN, and startup checks that both ran. See
 Send complete rendered prompts to `POST /v1/monitor/score`; see the
 [endpoint contract](../../../experiments/b200_monitor_score/README.md).
 
-Use `experiments.b200_attention_precision.server`, `AttentionPrecisionWorker`
+Use `gleipnir.serving.stack.server`, `AttentionPrecisionWorker`
 and the source-bound `Vllm031PoolingScheduler` zero-output-token reservation
 correction. CUDA GDN/automatic FlashInfer context parallelism remain selected.
 Torch 2.13 native compilation checks supersede the old Torch 2.11 mutation
@@ -74,7 +74,7 @@ The normal startup entrypoint now launches this default:
 
 ```bash
 PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
-  -m experiments.b200_vllm031.runtime \
+  -m gleipnir.serving.stack.environment \
   -m experiments.b200_attention_gdn_serving.startup --name fp8_default01
 ```
 

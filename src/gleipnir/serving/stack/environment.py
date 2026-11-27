@@ -7,6 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from gleipnir.repository import repo_root
+
 
 def candidate_environment(root: Path) -> dict[str, str]:
     """Reuse audited native dependencies and durable compiler caches."""
@@ -60,9 +62,7 @@ def candidate_environment(root: Path) -> dict[str, str]:
 
 
 if __name__ == "__main__":
-    root = next(
-        p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
-    )
+    root = repo_root(__file__)
     raise SystemExit(
         subprocess.call(
             [sys.executable, *sys.argv[1:]], cwd=root, env=candidate_environment(root)

@@ -3,7 +3,7 @@
 # 2,048 tokens (graphs01) against default capture (full02), 3 c1 passes each.
 set -euo pipefail
 cd /workspace/gleipnir
-PY="/tmp/gleipnir-vllm031-runtime/bin/python -m experiments.b200_vllm031.runtime"
+PY="/tmp/gleipnir-vllm031-runtime/bin/python -m gleipnir.serving.stack.environment"
 export PYTHONPATH=src:.
 OUT=results/qwen38_27b_serving
 Q=gleipnir_geometry_fp8_fp4

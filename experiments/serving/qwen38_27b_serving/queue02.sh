@@ -3,7 +3,7 @@
 # the MXFP8 and MXFP8 + tuned-GEMM candidates, one GPU job at a time.
 set -euo pipefail
 cd /workspace/gleipnir
-PY="/tmp/gleipnir-vllm031-runtime/bin/python -m experiments.b200_vllm031.runtime"
+PY="/tmp/gleipnir-vllm031-runtime/bin/python -m gleipnir.serving.stack.environment"
 export PYTHONPATH=src:.
 MODEL=/tmp/gleipnir-merged/qwen38-27b-s0-01
 OUT=results/qwen38_27b_serving

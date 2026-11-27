@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import importlib.metadata
-import inspect
 import json
 import os
 import subprocess
@@ -255,12 +254,11 @@ def frozen_workloads(config: dict) -> dict[str, list[dict]]:
 
 async def optimized(config: dict) -> None:
     """Load the new merged weights with the unchanged selected compiled recipe."""
-    from vllm.v1.core.sched import scheduler
 
     from experiments.b200_vllm031.run import archive_audits
-    from experiments.b200_vllm031.runtime import candidate_environment
-    from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
     from gleipnir.serving.reference import selected_serving_default
+    from gleipnir.serving.stack.environment import candidate_environment
+    from gleipnir.serving.stack.source_bindings import restore_diagnostic_sources
 
     check_binding(config)
     merged = json.loads((OUTPUT / "merged_parity.json").read_text())
@@ -271,12 +269,9 @@ async def optimized(config: dict) -> None:
         "runtime"
     ]:
         raise ValueError("selected serving runtime changed")
-    scheduler_binding = {
-        "upstream_sha256": file_hash(Path(inspect.getfile(scheduler))),
-        "integration_sha256": file_hash(ROOT / "experiments/b200_vllm031/scheduler.py"),
-    }
-    if scheduler_binding != selection["scheduler_binding"]:
-        raise ValueError("selected pooling scheduler changed")
+    from gleipnir.serving.sources import scheduler_binding as live_binding
+
+    scheduler_binding = live_binding(ROOT, selection["scheduler_binding"])
     if (SERVING / "server.json").exists():
         raise ValueError("retire old scorer before loading the new adapter")
     driver = int(os.environ.get("GLEIPNIR_AUGMENTED_DRIVER_PID", "-1"))

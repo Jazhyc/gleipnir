@@ -9,11 +9,11 @@ from types import MethodType
 
 import torch
 
-from experiments.b200_attention_gdn_serving.swiglu_native_output_worker import (
+from gleipnir.serving.sources import recorded_source_path
+from gleipnir.serving.stack.workers.native_output import (
     NativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker,
 )
-from experiments.b200_attention_gdn_serving.worker import ROOT, write
-from gleipnir.serving.sources import recorded_source_path
+from gleipnir.serving.stack.workers.serving_audit import ROOT, write
 
 
 class DirectGdnNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(

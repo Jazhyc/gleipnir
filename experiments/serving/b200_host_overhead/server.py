@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-import experiments.b200_attention_precision.server  # noqa: F401
+import gleipnir.serving.stack.server  # noqa: F401
 from experiments.serving.b200_host_overhead.tracing import allow_profiler_attach
 
 if __name__ == "__main__":

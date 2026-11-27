@@ -113,7 +113,7 @@ def main() -> None:
         *(
             [
                 "src/gleipnir/serving/gigatoken.py",
-                "experiments/b200_inference_benchmark/frontend_server.py",
+                "src/gleipnir/serving/stack/frontend.py",
             ]
             if frontend is not None
             else []

@@ -270,7 +270,7 @@ def test_worker_uses_isolated_runtime_and_records_launch(campaign, monkeypatch, 
     runner.worker(campaign, stage)
     key = "serving_python" if stage == "evaluate" else "training_python"
     assert captured["command"][0] == campaign.config[key]
-    assert ("experiments.b200_vllm031.runtime" in captured["command"]) == (
+    assert ("gleipnir.serving.stack.environment" in captured["command"]) == (
         stage == "evaluate"
     )
     assert captured["env"]["HF_HUB_OFFLINE"] == "1"

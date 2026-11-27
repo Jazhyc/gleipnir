@@ -10,8 +10,8 @@ initialization, and the override is recorded.
 
 import os
 
-from experiments.b200_attention_gdn_serving.worker import write
-from experiments.b200_gdn_fast.worker import FastGatedTrimWorker, FastGdnWorker
+from gleipnir.serving.stack.workers.gdn_fast import FastGatedTrimWorker, FastGdnWorker
+from gleipnir.serving.stack.workers.serving_audit import write
 
 
 class PrefixCachingMixin:

@@ -10,8 +10,8 @@ import torch
 from experiments.b200_attention_gdn_serving.combined_worker import (
     MixedFa4ServingAuditWorker,
 )
-from experiments.b200_attention_gdn_serving.worker import ROOT
 from gleipnir.serving.sources import recorded_source_path
+from gleipnir.serving.stack.workers.serving_audit import ROOT
 from gleipnir.serving_fa4 import make_paged_fa4_forward
 
 

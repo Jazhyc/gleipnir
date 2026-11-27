@@ -1,0 +1,166 @@
+{
+  "base_revision": "1bff563623ad0a5682671346048f7f10aee6a4b5",
+  "sources": {
+    "experiments/b200_attention_gdn_serving/attention_fp4_worker.py": {
+      "path": "src/gleipnir/serving/stack/workers/attention_fp4.py",
+      "sha256": "4c3eeab603deb8fad8b2c4a1086f7398ee23c12311f70c4a2688b34f51bd5040",
+      "sha256_before": "0d1121aa987c11fc1dc70237ca043879d996995ecc9cda35c404e95fe6cbd3aa"
+    },
+    "experiments/b200_attention_gdn_serving/mixed_worker.py": {
+      "path": "src/gleipnir/serving/stack/workers/mixed.py",
+      "sha256": "56f4dd951907fff0fa1ef88e54207cbd153a6692631ac2a535906bdec92d7322",
+      "sha256_before": "4ed77c487e3892ad017294d7e06405a0a9a135fed906f27d8841ec53d22730d3"
+    },
+    "experiments/b200_attention_gdn_serving/mxfp8_worker.py": {
+      "path": "src/gleipnir/serving/stack/workers/mxfp8.py",
+      "sha256": "8422d6199d5684bcfc0fb1e668af84a1980c559952b31f84b50ca027131ddea0",
+      "sha256_before": "ecd9ddb23c39d15abfbb8ef7fd20e4e1fe2ec8d1c9eeccb52ba6cf72d3b892d1"
+    },
+    "experiments/b200_attention_gdn_serving/prepare_worker.py": {
+      "path": "src/gleipnir/serving/stack/workers/preparation.py",
+      "sha256": "a720dae3fbfbf9d126e21fd3b57c28519cc783a875cff39a54f869775631dd5a",
+      "sha256_before": "78f6000602adbaa31f5ab8a6ce3c4b5cbf85def17b4d7887f898b638e119e757"
+    },
+    "experiments/b200_attention_gdn_serving/prompt_only_trace.py": {
+      "path": "src/gleipnir/serving/stack/prompt_only_trace.py",
+      "sha256": "0a134f3de87bc5db377aade77a7456e037fc57240367488e106998f9c7d065f1",
+      "sha256_before": "0a847f78663ad06d86f06c800ba120dfcbef60b5b8106c0216b95451fa1230b5"
+    },
+    "experiments/b200_attention_gdn_serving/prompt_only_worker.py": {
+      "path": "src/gleipnir/serving/stack/workers/prompt_only.py",
+      "sha256": "f308e0c518bfb6d820637452bfe2961d00905e8f3149232dd64412a7262dfe1a",
+      "sha256_before": "9e54112c43ab9b90f3663aa730c6ddece1f692eeebdc6c1a5db1fa96fd8fe1ea"
+    },
+    "experiments/b200_attention_gdn_serving/server.py": {
+      "path": "src/gleipnir/serving/stack/registry.py",
+      "sha256": "0f3c8a21ff54d940aff2de5404eeb93772ddb86182d559c69672c5c08f63e8f8",
+      "sha256_before": "b41c46b53f0dc31e1bf8132ad9451fc8bfca56c0ca72e9f8b46f5c1bc7d59bf2"
+    },
+    "experiments/b200_attention_gdn_serving/swiglu_native_output_worker.py": {
+      "path": "src/gleipnir/serving/stack/workers/native_output.py",
+      "sha256": "5b9f42dc30eb07887b08f40719f93d60da5d14af0b990e6f7eff9f4cce7121d7",
+      "sha256_before": "e97699dea55272849da1f7a67771ef4f378b9657c87449ef1f825e5f98150d90"
+    },
+    "experiments/b200_attention_gdn_serving/tuned_worker.py": {
+      "path": "src/gleipnir/serving/stack/workers/tuned.py",
+      "sha256": "9a9b2bd3854263c5584395f9f78ee9e451f80ab114df2032407843cce54c6c9d",
+      "sha256_before": "19c1ba394eae4b787fa5f6b4132c9cbb04522415f4662e2e61ab26c75241c664"
+    },
+    "experiments/b200_attention_gdn_serving/worker.py": {
+      "path": "src/gleipnir/serving/stack/workers/serving_audit.py",
+      "sha256": "f885937370e5791dc1fa04c34728cfe1c6a906863ba9e5b0a3336959734af270",
+      "sha256_before": "13096daf17814079b630344217c5419dd55ee5d6bcfaf8fb6b017abdfcd94343"
+    },
+    "experiments/b200_attention_precision/run.py": {
+      "path": "experiments/b200_attention_precision/run.py",
+      "sha256": "a0842ca49b58990555f228fbdd0cb3b2a7c1a353082d2df557a99b3465f472a9",
+      "sha256_before": "283e4129cfda7b2859c2c37c8060e9e3beb7c317f8af89fa57cc1a589e239219"
+    },
+    "experiments/b200_attention_precision/server.py": {
+      "path": "src/gleipnir/serving/stack/server.py",
+      "sha256": "907bce6c9041cdf94a1eba9d60755aa14c1c98d2136d276fd225a3a40fcb7bea",
+      "sha256_before": "5530f0e19e44c3cdeba8eb42adff549a0d0c5872d6976f4b1cfa3e0b04cf2235"
+    },
+    "experiments/b200_attention_precision/worker.py": {
+      "path": "src/gleipnir/serving/stack/workers/attention_precision.py",
+      "sha256": "e2de3af76c7c22fc025364f36b51cbd003f00b9b77831c3cbe54044a6f4faa5f",
+      "sha256_before": "8479d79cd0be99fbcfaf4070c5089b309d6c1da17e87a5431114258a61f935b2"
+    },
+    "experiments/b200_context_million/envelope.py": {
+      "path": "src/gleipnir/serving/stack/long_context_envelope.py",
+      "sha256": "65480754f824aabe509f01102a83d37e1a9fd45e610b4625ba36156918c68a71",
+      "sha256_before": "b553fb19f4d23e3adf292b6e4f7edb5db87d7fc0d893343eed380a53aab0a05a"
+    },
+    "experiments/b200_context_million/worker.py": {
+      "path": "src/gleipnir/serving/stack/workers/long_context.py",
+      "sha256": "62125ff41091437301c7506a369488426b91a4918a8ce7719d7e6b29696edfaf",
+      "sha256_before": "921b20b48015706a487bc0b1dd27983abf304ea5ee67a95c11ca15fb4fb3f5d3"
+    },
+    "experiments/b200_frost_inference/worker.py": {
+      "path": "src/gleipnir/serving/stack/workers/frost.py",
+      "sha256": "ec6b5024b52ddede36a94a9c4196669bfa15ecb21828a2c27a35e51ff750764e",
+      "sha256_before": "4fcd73c30b5ec7af00a49b5a35948bc89e6a5aeaecbefaa1177f6c04c8d53e17"
+    },
+    "experiments/b200_gdn_fast/worker.py": {
+      "path": "src/gleipnir/serving/stack/workers/gdn_fast.py",
+      "sha256": "02edbb4b0113c2068ef091792c7a933b5ed2f26b76d94bf707beeb1a4f9e586e",
+      "sha256_before": "e0225b4e7f7ae111413a0531bb93baa770f76f66bb972c5d2e51e0849d1ce541"
+    },
+    "experiments/b200_gdn_route/worker.py": {
+      "path": "src/gleipnir/serving/stack/workers/gdn_route.py",
+      "sha256": "8cd5cacfd194ca30e9e2d871d71081b58aff5556f13de4fadf0b54f73d73c0be",
+      "sha256_before": "031800e29f1070f866ed4e746e76921fea941223856f16868d54bd58ee82ce07"
+    },
+    "experiments/b200_inference_benchmark/frontend_server.py": {
+      "path": "src/gleipnir/serving/stack/frontend.py",
+      "sha256": "fab3cfa6d776487dd228fb2432856973284e83c3209864ce3bca7962f3617396",
+      "sha256_before": "82568ddfad2950f92af7deb3e6b47c4ec031f36e5433176a9570169d20590eda"
+    },
+    "experiments/b200_last_layer_trim/worker.py": {
+      "path": "src/gleipnir/serving/stack/workers/last_query.py",
+      "sha256": "652a331c0d37b9d57c2e9ad9b432deb38b5b0bea0f17fd5e811b020867462995",
+      "sha256_before": "44ec81ef2a6fa4391cd9fecc22d0af5def16eb783d1091fbd1e98e38ec6bf3ba"
+    },
+    "experiments/b200_monitor_score/server.py": {
+      "path": "src/gleipnir/serving/stack/score_server.py",
+      "sha256": "3ac157fa9c25e7199473ed1a136ffcc4493276d1a17891ac043ed3515d468396",
+      "sha256_before": "9ba80065569dfb249c1efdf91e7b8622283e4940dafa4bfcdaf1454fe39c5dd7"
+    },
+    "experiments/b200_monitor_score/worker.py": {
+      "path": "src/gleipnir/serving/stack/workers/monitor_score.py",
+      "sha256": "9c36f3659eaa3fcea6ef36ac66b7d486e0d611ef8964e098c5b0b4c042e2eaa9",
+      "sha256_before": "8ed001d191caf397b0d2c0bcd19f9ca8cee8546043b635bc5f58bbc206031a03"
+    },
+    "experiments/b200_prefix_replay/worker.py": {
+      "path": "src/gleipnir/serving/stack/workers/prefix_cache.py",
+      "sha256": "98a7cedeaa9b3647dbebab2c7491b56ac3241bd5273059e0b198747185351aa0",
+      "sha256_before": "cbc599e18028481a4240932d62ec581259690536255f2a99c31b92fe730b0e05"
+    },
+    "experiments/b200_vllm031/backend_config.py": {
+      "path": "src/gleipnir/serving/stack/backend_config.py",
+      "sha256": "795a75a830e21c479e47cec9afbfca7006b71ce8b2c90a543536072e1f3096d9",
+      "sha256_before": "795a75a830e21c479e47cec9afbfca7006b71ce8b2c90a543536072e1f3096d9"
+    },
+    "experiments/b200_vllm031/runtime.py": {
+      "path": "src/gleipnir/serving/stack/environment.py",
+      "sha256": "84f0baa4c23a2a2e553fe2cfaa3c1630a8e6ecca556dd2508ced4e69fb045f87",
+      "sha256_before": "8a910c4e6853548e4778a2d21717f43b5b65aca1af02b348fffb64f6a751bc58"
+    },
+    "experiments/b200_vllm031/scheduler.py": {
+      "path": "src/gleipnir/serving/stack/scheduler.py",
+      "sha256": "8f84add62595cee9d243449860f22c44d179943521ce6eebfb58ad0412c739f6",
+      "sha256_before": "8f84add62595cee9d243449860f22c44d179943521ce6eebfb58ad0412c739f6"
+    },
+    "experiments/b200_vllm031/server.py": {
+      "path": "src/gleipnir/serving/stack/migration_server.py",
+      "sha256": "50cbca6e4e9100ad5f219f229d991148805d0a132d06acb5891baaff8d5ac936",
+      "sha256_before": "4a04f404b8efda50039aa9f5df18e47a28f08905918e17068c235243fb8a3cc5"
+    },
+    "experiments/b200_vllm031/source_bindings.py": {
+      "path": "src/gleipnir/serving/stack/source_bindings.py",
+      "sha256": "91dd22e18d962f0c1764e8f36c8de1f04b48525a55c0d8647a13b18004e0cead",
+      "sha256_before": "3476abf8d33ed3206f095566ab4060c2f8026c72144b3417a787e1df707fd22c"
+    },
+    "experiments/b200_vllm031/worker.py": {
+      "path": "src/gleipnir/serving/stack/workers/migration.py",
+      "sha256": "6a6965f4adc772065f60463676df88b9a8c6873ecc55b42f8cd5aef36d368a9e",
+      "sha256_before": "90cc55262e9aad62596018200dbda6b653ffabf7c9be674a5f30f9938bacbb0f"
+    },
+    "experiments/qwen38_27b_serving/quant_server.py": {
+      "path": "src/gleipnir/serving/stack/quant_server.py",
+      "sha256": "63fbd6f389b79b83abb3b238b82621d4aaebb4771d4a00a73a5424c30d25709b",
+      "sha256_before": "968abe32f35687edfe02912542317cfdb591757f054473c2b5ce19e56ddc5607"
+    },
+    "src/gleipnir/_compat.py": {
+      "path": "src/gleipnir/_compat.py",
+      "sha256": "6687137fe114d332c2397688faf5d5c4ed5bb901fc7c48997046d43a27978941",
+      "sha256_before": "1c98b8acf5084de33ff47d70eaf5e511083c94cdd27d25bbdb9e2cf223d11486"
+    },
+    "src/gleipnir/serving/gigatoken.py": {
+      "path": "src/gleipnir/serving/gigatoken.py",
+      "sha256": "b26ee21bcdc7e52d32af622532905f997aa074031cf6aa4aa5c3d18c060b1315",
+      "sha256_before": "e3eb656b463bdd45161ff9068f985c92b487e8047d4604519e1bc6f4ace524b4"
+    }
+  },
+  "status": "candidate"
+}

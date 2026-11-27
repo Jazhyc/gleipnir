@@ -15,7 +15,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from experiments.b200_context_million.envelope import (
+from gleipnir.serving.stack.long_context_envelope import (
     CHUNK,
     HISTORIES,
     IRREGULAR,
@@ -49,7 +49,7 @@ def main() -> None:
     torch.backends.cuda.matmul.allow_tf32 = False
     paths = [
         Path(__file__),
-        Path("experiments/b200_context_million/envelope.py"),
+        Path("src/gleipnir/serving/stack/long_context_envelope.py"),
         Path(base.__file__),
         Path("src/gleipnir/serving/mxfp8_geometry.py"),
         Path("experiments/serving/qwen38_27b_serving/mxfp8_canary.py"),

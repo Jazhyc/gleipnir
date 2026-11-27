@@ -13,6 +13,11 @@ Importing `gleipnir` puts the running interpreter's `bin/` first on `PATH`
 without activating it. Launch runners through a project entrypoint that
 imports `gleipnir`; scripts that don't import it must set `PATH` themselves.
 
+The optimized runtime lives in `gleipnir.serving.stack`; accepted recipes and
+receipts that name the former experiment modules resolve through
+`gleipnir.serving.sources` and `stack/promotion.json` (see the module
+docstrings). Edit a promoted file only as a new candidate recipe.
+
 Standing user preference, updated 2026-10-13: use BF16 vLLM for ordinary adapter
 iteration and training-recipe comparisons. Use optimized precision serving only
 for QAD-adapted deployment candidates. Monitor scoring

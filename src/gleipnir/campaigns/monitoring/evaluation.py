@@ -4,13 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import importlib.metadata
-import inspect
 import json
 import os
 import subprocess
 import sys
 import time
-from pathlib import Path
 
 import httpx
 import numpy as np
@@ -28,7 +26,7 @@ from gleipnir.evaluation.binary import metric_views
 from gleipnir.evaluation.calibration import binary_calibration
 from gleipnir.evaluation.campaign import EvaluationContext, canary, render
 from gleipnir.evaluation.http_score import score_batch
-from gleipnir.repository import experiment_dir
+from gleipnir.serving.sources import scheduler_binding as live_scheduler_binding
 
 from .contract import Campaign
 
@@ -226,12 +224,11 @@ def frozen_workloads(ctx: Campaign) -> dict[str, list[dict]]:
 
 async def optimized(ctx: Campaign) -> None:
     """Load the new merged weights with the unchanged selected compiled recipe."""
-    from vllm.v1.core.sched import scheduler
 
     from experiments.b200_vllm031.run import archive_audits
-    from experiments.b200_vllm031.runtime import candidate_environment
-    from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
     from gleipnir.serving.reference import selected_serving_default
+    from gleipnir.serving.stack.environment import candidate_environment
+    from gleipnir.serving.stack.source_bindings import restore_diagnostic_sources
 
     config = ctx.config
     diagnostic = config["evaluation"].get("failed_parity_diagnostic", False)
@@ -245,14 +242,9 @@ async def optimized(ctx: Campaign) -> None:
         "runtime"
     ]:
         raise ValueError("selected serving runtime changed")
-    scheduler_binding = {
-        "upstream_sha256": file_hash(Path(inspect.getfile(scheduler))),
-        "integration_sha256": file_hash(
-            experiment_dir("b200_vllm031", ctx.root) / "scheduler.py"
-        ),
-    }
-    if scheduler_binding != selection["scheduler_binding"]:
-        raise ValueError("selected pooling scheduler changed")
+    scheduler_binding = live_scheduler_binding(
+        ctx.root, selection["scheduler_binding"]
+    )
     if (ctx.serving / "server.json").exists():
         raise ValueError("retire old scorer before loading the new adapter")
     driver = int(os.environ.get("GLEIPNIR_CAMPAIGN_DRIVER_PID", "-1"))

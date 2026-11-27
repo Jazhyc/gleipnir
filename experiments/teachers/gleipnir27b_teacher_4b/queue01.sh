@@ -5,7 +5,7 @@ set -euo pipefail
 cd /workspace/gleipnir
 export PYTHONPATH=src:. HF_HUB_OFFLINE=1
 echo "teacher_reference_start $(date -Is)"
-/tmp/gleipnir-vllm031-runtime/bin/python -m experiments.b200_vllm031.runtime \
+/tmp/gleipnir-vllm031-runtime/bin/python -m gleipnir.serving.stack.environment \
   -m experiments.teachers.gleipnir27b_vocab_distillation.extract --model gleipnir \
   --jobs teacher:id_cot_removed --name extract01
 echo "arms_start $(date -Is)"

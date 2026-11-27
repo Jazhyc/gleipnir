@@ -94,18 +94,18 @@ uv venv .venv-vllm031 --python 3.12
 UV_PROJECT_ENVIRONMENT=.venv-vllm031 uv sync --locked
 PYTHONPATH=src:. .venv-vllm031/bin/python -m experiments.b200_vllm031.stage
 PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
-  -m experiments.b200_vllm031.runtime \
+  -m gleipnir.serving.stack.environment \
   -m experiments.b200_vllm031.validate --name validation01
 PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
-  -m experiments.b200_vllm031.runtime \
+  -m gleipnir.serving.stack.environment \
   -m experiments.b200_attention_gdn_serving.fp4_prepare_canary \
   --output results/b200_vllm031/vendor01.json
 PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
-  -m experiments.b200_vllm031.runtime \
+  -m gleipnir.serving.stack.environment \
   -m experiments.b200_vllm031.gdn_compare \
   --output results/b200_vllm031/gdn_compare01.json
 PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
-  -m experiments.b200_vllm031.runtime \
+  -m gleipnir.serving.stack.environment \
   -m experiments.b200_vllm031.run --name default01 \
   --native-receipt results/b200_vllm031/validation01/native.json \
   --gdn-receipt results/b200_vllm031/gdn_compare01.json \
@@ -149,6 +149,6 @@ evaluation server after collecting receipts; leave capacity and caches intact.
 
 ```bash
 PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
-  -m experiments.b200_vllm031.runtime \
+  -m gleipnir.serving.stack.environment \
   -m experiments.b200_vllm031.id --name id01
 ```

@@ -25,7 +25,7 @@ WORKLOAD = ROOT / "results/b200_context_million/million01/workload.json"
 def diagnostic_command(command: list[str]) -> list[str]:
     """Swap only the server module and worker class for attachable variants."""
     command = command.copy()
-    if command[1:3] != ["-m", "experiments.b200_attention_precision.server"]:
+    if command[1:3] != ["-m", "gleipnir.serving.stack.server"]:
         raise ValueError("selected server module changed")
     command[2] = "experiments.serving.b200_host_overhead.server"
     worker = command.index("--worker-cls") + 1

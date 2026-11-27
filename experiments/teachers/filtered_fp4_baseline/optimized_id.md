@@ -22,6 +22,6 @@ The assembled driver at `results/filtered-fp4-fa4-optimized-id01/run.py` uses
 the shared scoring, input attachment and metric functions, verifies all original
 completed-stage artifact hashes before reuse, and saves the actual command,
 source bindings, launch receipt and per-batch predictions. Run it through
-`experiments.b200_vllm031.runtime` in the preserved serving interpreter. Retire
+`gleipnir.serving.stack.environment` in the preserved serving interpreter. Retire
 the candidate after both passes or failure; retain shared caches and artifacts.
 Its construction/configuration is independent of the frozen default selection.

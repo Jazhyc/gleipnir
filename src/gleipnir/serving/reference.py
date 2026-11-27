@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from gleipnir.repository import experiment_dir
+from gleipnir.serving.sources import promote_command, recorded_source_matches
 
 
 def selected_score_reference(root: Path) -> dict:
@@ -43,9 +44,14 @@ def selected_score_reference(root: Path) -> dict:
 
 
 def selected_serving_default(
-    root: Path, *, last_query: bool = True
+    root: Path, *, last_query: bool = True, promote: bool = True
 ) -> tuple[dict, list[str]]:
-    """Resolve the accepted current recipe separately from frozen comparisons."""
+    """Resolve the accepted current recipe separately from frozen comparisons.
+
+    The accepted command names the experiment modules it was validated with;
+    ``promote`` (the default) returns it on the promoted ``gleipnir.serving.stack``
+    modules after verifying every recorded source (``sources.promote_command``).
+    """
     selection = json.loads(
         (
             experiment_dir("b200_inference_benchmark", root) / "serving_default.json"
@@ -85,7 +91,7 @@ def selected_serving_default(
             or path == "src/gleipnir/serving/reference.py"
         ):
             continue
-        if hashlib.sha256((root / path).read_bytes()).hexdigest() != expected:
+        if not recorded_source_matches(root, path, expected):
             raise ValueError(f"accepted serving runtime source drift: {path}")
     trim = selection.get("last_query_attention")
     if trim is not None and last_query:
@@ -98,6 +104,8 @@ def selected_serving_default(
             fast = selection.get("gdn_fast")
             if fast is not None:
                 apply_worker_layer(root, command, fast, bindings)
+    if promote:
+        command = promote_command(root, command)
     return selection, command
 
 
@@ -117,7 +125,7 @@ def apply_worker_layer(
     index = command.index("--additional-config") + 1
     additional = json.loads(command[index])
     for path, expected in layer["sources"].items():
-        if hashlib.sha256((root / path).read_bytes()).hexdigest() != expected:
+        if not recorded_source_matches(root, path, expected):
             raise ValueError(f"accepted worker layer source drift: {path}")
         additional["gleipnir_frost_fp4"][path] = expected
     if config is not None:
@@ -141,7 +149,7 @@ def apply_last_query(
     index = command.index("--additional-config") + 1
     additional = json.loads(command[index])
     for path, expected in trim["sources"].items():
-        if hashlib.sha256((root / path).read_bytes()).hexdigest() != expected:
+        if not recorded_source_matches(root, path, expected):
             raise ValueError(f"accepted last-query source drift: {path}")
         additional["gleipnir_frost_fp4"][path] = expected
     additional["last_query_attention"] = {

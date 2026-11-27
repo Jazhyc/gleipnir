@@ -5,17 +5,18 @@ import os
 import re
 from pathlib import Path
 
-from experiments.b200_attention_gdn_serving.worker import write
-from experiments.b200_attention_precision.worker import AttentionPrecisionWorker
-from experiments.b200_context_million.worker import LongContextWorker
+from gleipnir.repository import repo_root
+from gleipnir.serving.stack.workers.attention_precision import AttentionPrecisionWorker
+from gleipnir.serving.stack.workers.long_context import LongContextWorker
+from gleipnir.serving.stack.workers.serving_audit import write
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 
 
 def validate(receipt: dict, gpu: str | None = None) -> None:
     """Require complete bitwise kernel coverage from unchanged executed sources."""
-    from experiments.b200_inference_benchmark.run import sha
     from experiments.b200_last_layer_trim.native import CASES, SUBSETS
+    from gleipnir.serving.sources import recorded_source_matches
 
     if not receipt.get("passed") or receipt.get("mismatched_cases"):
         raise ValueError("last-query kernel equivalence failed")
@@ -26,7 +27,7 @@ def validate(receipt: dict, gpu: str | None = None) -> None:
     ):
         raise ValueError("last-query kernel equivalence coverage incomplete")
     for path, expected in receipt["sources"].items():
-        if sha(ROOT / path) != expected:
+        if not recorded_source_matches(ROOT, path, expected):
             raise ValueError(f"last-query source changed: {path}")
     if gpu is not None and receipt.get("gpu") != gpu:
         raise ValueError("last-query kernel receipt hardware changed")
@@ -36,7 +37,7 @@ def validation_path(additional: dict) -> Path:
     """The selected default binds its receipt; experiment runners use the env."""
     selected = additional.get("last_query_attention")
     if selected is not None:
-        from experiments.b200_inference_benchmark.run import sha
+        from gleipnir.data.monitoring import file_hash as sha
 
         path = ROOT / selected["validation"]
         if sha(path) != selected["validation_sha256"]:

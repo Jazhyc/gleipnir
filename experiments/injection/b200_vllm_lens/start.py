@@ -29,9 +29,9 @@ def write(path: Path, value: object) -> None:
 
 
 async def start(out: Path) -> dict:
-    from experiments.b200_vllm031.runtime import candidate_environment
-    from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
     from experiments.serving.b200_long_context.run import gpu
+    from gleipnir.serving.stack.environment import candidate_environment
+    from gleipnir.serving.stack.source_bindings import restore_diagnostic_sources
 
     if gpu()["apps"] or (SERVING / "server.json").exists():
         raise ValueError("retire the identity-verified previous scorer first")

@@ -1,8 +1,7 @@
 """BF16 monitor server entrypoint with the geometry FP8/FP4 config registered."""
 
-from pathlib import Path
-
-from experiments.b200_vllm031.backend_config import install
+from gleipnir.repository import repo_root
+from gleipnir.serving.stack.backend_config import install
 
 install()
 
@@ -14,13 +13,7 @@ if __name__ == "__main__":
     from gleipnir.serving.gigatoken import install_native_encoder
     from gleipnir.serving.monitor_score import install_score_api
 
-    install_compile_identity(
-        next(
-            p
-            for p in Path(__file__).resolve().parents
-            if (p / "pyproject.toml").is_file()
-        )
-    )
+    install_compile_identity(repo_root(__file__))
     install_native_encoder()
     install_score_api()
     main()

@@ -63,7 +63,7 @@ def worker(ctx: Campaign, stage: str) -> None:
         command = [
             python,
             "-m",
-            "experiments.b200_vllm031.runtime",
+            "gleipnir.serving.stack.environment",
             "-m",
             "gleipnir.campaigns.monitoring",
             "_worker",

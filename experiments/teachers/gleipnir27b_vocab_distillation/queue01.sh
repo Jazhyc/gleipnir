@@ -2,7 +2,7 @@
 # Step 1 extraction: Gleipnir 27B, then unadapted Qwen3.8-27B, one engine each.
 set -euo pipefail
 cd /workspace/gleipnir
-PY="/tmp/gleipnir-vllm031-runtime/bin/python -m experiments.b200_vllm031.runtime"
+PY="/tmp/gleipnir-vllm031-runtime/bin/python -m gleipnir.serving.stack.environment"
 export PYTHONPATH=src:. HF_HUB_OFFLINE=1
 for model in gleipnir base; do
   echo "${model}_start $(date -Is)"

@@ -1,7 +1,7 @@
 """Explicit optimized-serving candidate using validated typed KV coordinates."""
 
-from experiments.b200_attention_precision.worker import AttentionPrecisionWorker
 from experiments.teachers.filtered_fp4_baseline.compiler_repair import install_repair
+from gleipnir.serving.stack.workers.attention_precision import AttentionPrecisionWorker
 
 
 class TypedCoordinateWorker(AttentionPrecisionWorker):

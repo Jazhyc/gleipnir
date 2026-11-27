@@ -107,7 +107,7 @@ def main() -> None:
             "src/gleipnir/_compat.py",
             "src/gleipnir/serving/prompt_only.py",
             "src/gleipnir/serving/prompt_only_contract.py",
-            "experiments/b200_attention_gdn_serving/prompt_only_worker.py",
+            "src/gleipnir/serving/stack/workers/prompt_only.py",
             "experiments/b200_attention_gdn_serving/prompt_only_canary.py",
         ]
     )
@@ -124,8 +124,8 @@ def main() -> None:
         *sources,
         str(Path(__file__).relative_to(ROOT)),
         "src/gleipnir/serving/operator_trace.py",
-        "experiments/b200_attention_gdn_serving/prompt_only_trace.py",
-        "experiments/b200_inference_benchmark/frontend_server.py",
+        "src/gleipnir/serving/stack/prompt_only_trace.py",
+        "src/gleipnir/serving/stack/frontend.py",
     ]:
         target = out / "executed_sources" / source
         target.parent.mkdir(parents=True, exist_ok=True)

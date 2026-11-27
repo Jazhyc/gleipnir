@@ -10,7 +10,7 @@ from experiments.b200_context_million.test_context_million import (
     selected_command,
 )
 from experiments.b200_last_layer_trim.run import FINISHED, LAST, TAIL
-from experiments.b200_last_layer_trim.worker import ROOT, validate
+from gleipnir.serving.stack.workers.last_query import ROOT, validate
 
 
 def test_trim_command_changes_only_worker_and_bound_sources():
@@ -42,7 +42,7 @@ def test_tail_variant_swaps_server_and_binds_tail_sources():
     ]
     assert "src/gleipnir/serving/last_query_tail.py" in sources
     finished = phase_command(selected_command(), PHASES["native"], 32768, FINISHED)
-    assert finished[2] == "experiments.b200_attention_precision.server"
+    assert finished[2] == "gleipnir.serving.stack.server"
 
 
 def receipt(**overrides):

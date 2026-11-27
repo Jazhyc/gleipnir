@@ -15,9 +15,9 @@ import os
 import re
 from pathlib import Path
 
-from experiments.b200_attention_gdn_serving.worker import write
-from experiments.b200_gdn_route.worker import GdnRouteMixin
 from gleipnir.serving.bf16_worker import Bf16Worker
+from gleipnir.serving.stack.workers.gdn_route import GdnRouteMixin
+from gleipnir.serving.stack.workers.serving_audit import write
 
 
 def _layer_kinds(worker) -> list[str]:
@@ -86,8 +86,8 @@ class LastQueryMixin:
         from vllm.model_executor.layers.attention import Attention
         from vllm.v1.attention.backends.flashinfer import TRTLLMPrefill
 
-        from experiments.b200_last_layer_trim.worker import validate, validation_path
         from gleipnir.serving.last_query_attention import LastQueryState, install
+        from gleipnir.serving.stack.workers.last_query import validate, validation_path
 
         receipt = json.loads(
             validation_path(self.vllm_config.additional_config).read_text()

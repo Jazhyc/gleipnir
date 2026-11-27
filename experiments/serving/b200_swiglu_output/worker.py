@@ -5,10 +5,10 @@ import os
 
 import torch
 
-from experiments.b200_attention_gdn_serving.worker import write
-from experiments.b200_attention_precision.worker import AttentionPrecisionWorker
 from experiments.b200_inference_benchmark.run import ROOT, sha
 from gleipnir.serving.fp4.swiglu_overhead_validation import validate_native
+from gleipnir.serving.stack.workers.attention_precision import AttentionPrecisionWorker
+from gleipnir.serving.stack.workers.serving_audit import write
 
 
 class WholeRowSwiGluWorker(AttentionPrecisionWorker):

@@ -55,7 +55,7 @@ older 4B recipe ([score scaling](../../../docs/findings/serving/b200_score_scali
   authorized by the user on 2026-11-15.
 
 ```bash
-PY="/tmp/gleipnir-vllm031-runtime/bin/python -m experiments.b200_vllm031.runtime"
+PY="/tmp/gleipnir-vllm031-runtime/bin/python -m gleipnir.serving.stack.environment"
 $PY -m experiments.serving.serving_concurrency.environment
 $PY -m experiments.serving.serving_concurrency.run --model 4b --step bf16
 $PY -m experiments.serving.serving_concurrency.lengths --model 4b --step bf16 --phase native

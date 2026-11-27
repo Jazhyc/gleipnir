@@ -13,7 +13,7 @@ from vllm.v1.core.sched import async_scheduler, scheduler
 class Vllm031AsyncPoolingScheduler(async_scheduler.AsyncScheduler):
     """Upstream AsyncScheduler; pooling requests reserve no sampled token.
 
-    The synchronous correction (`experiments/b200_vllm031/scheduler.py`) sets
+    The synchronous correction (`src/gleipnir/serving/stack/scheduler.py`) sets
     `num_sampled_tokens_per_step = 0` so a max-length prompt is not cut by one
     token. In AsyncScheduler the same value also sizes output placeholders,
     which pooling requests never fill, so zero keeps them balanced.

@@ -25,10 +25,10 @@ def variant(route: str, cp_min_tokens: int | None) -> object:
         raise ValueError("the gated route needs --cp-min-tokens")
     return dataclasses.replace(
         BASE,
-        worker="experiments.b200_gdn_route.worker.GatedTrimWorker",
+        worker="gleipnir.serving.stack.workers.gdn_route.GatedTrimWorker",
         sources=(
             *BASE.sources,
-            "experiments/b200_gdn_route/worker.py",
+            "src/gleipnir/serving/stack/workers/gdn_route.py",
             "src/gleipnir/serving/gdn_route.py",
         ),
         environment={"GLEIPNIR_GDN_CP_MIN_TOKENS": str(cp_min_tokens)},

@@ -43,10 +43,10 @@ continues during the active turn, without promised follow-ups after it ends.
 
 ```bash
 PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
-  -m experiments.b200_vllm031.runtime \
+  -m gleipnir.serving.stack.environment \
   -m experiments.serving.b200_gdn_precision.native --name native01
 PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
-  -m experiments.b200_vllm031.runtime \
+  -m gleipnir.serving.stack.environment \
   -m experiments.serving.b200_gdn_precision.run --name gdn01 \
   --native-receipt results/b200_gdn_precision/native01.json
 ```

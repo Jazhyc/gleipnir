@@ -99,7 +99,7 @@ def main(config_path: str = "experiments/quantization/native_fp8_qat/config.yaml
                 timeout=7200,
             )
 
-        from experiments.b200_vllm031.runtime import candidate_environment
+        from gleipnir.serving.stack.environment import candidate_environment
 
         if "initial-serving" in stages:
             run_stage(

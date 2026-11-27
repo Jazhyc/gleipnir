@@ -168,7 +168,7 @@ async def condition(
 
     scheduler_binding = {
         "upstream_sha256": sha(Path(inspect.getfile(scheduler))),
-        "integration_sha256": sha(ROOT / "experiments/b200_vllm031/scheduler.py"),
+        "integration_sha256": sha(ROOT / "src/gleipnir/serving/stack/scheduler.py"),
     }
     if scheduler_binding != stock["scheduler_binding"]:
         raise ValueError("stock scheduler binding changed")

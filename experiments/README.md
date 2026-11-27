@@ -27,10 +27,12 @@ These experiments stay directly under `experiments/` because other files check
 their exact bytes and paths, and some of them locate the checkout from their
 own depth:
 
-- Serving stack. The accepted serving default and the released `gleipnir-serve`
-  image verify these sources by path and SHA-256, so moving or editing them
-  requires a new accepted recipe. Move them into `serving/` when that recipe is
-  next re-validated: [`b200_attention_gdn_serving`](b200_attention_gdn_serving/), [`b200_attention_precision`](b200_attention_precision/), [`b200_context_million`](b200_context_million/), [`b200_frost_inference`](b200_frost_inference/), [`b200_gdn_fast`](b200_gdn_fast/), [`b200_gdn_route`](b200_gdn_route/), [`b200_inference_benchmark`](b200_inference_benchmark/), [`b200_last_layer_trim`](b200_last_layer_trim/), [`b200_monitor_score`](b200_monitor_score/), [`b200_mutation_analysis`](b200_mutation_analysis/), [`b200_prefix_replay`](b200_prefix_replay/), [`b200_vllm031`](b200_vllm031/), [`release_serving`](release_serving/).
+- Serving stack. Its runtime (servers, workers, scheduler) now lives in
+  [`gleipnir.serving.stack`](../src/gleipnir/serving/stack/__init__.py). These
+  directories keep the canaries, comparison scripts, selections and frozen
+  controls that kernel receipts and the accepted serving default bind by path
+  and SHA-256, and several of those scripts locate the checkout from their own
+  depth, so they move only with fresh receipts: [`b200_attention_gdn_serving`](b200_attention_gdn_serving/), [`b200_attention_precision`](b200_attention_precision/), [`b200_context_million`](b200_context_million/), [`b200_frost_inference`](b200_frost_inference/), [`b200_gdn_fast`](b200_gdn_fast/), [`b200_gdn_route`](b200_gdn_route/), [`b200_inference_benchmark`](b200_inference_benchmark/), [`b200_last_layer_trim`](b200_last_layer_trim/), [`b200_monitor_score`](b200_monitor_score/), [`b200_mutation_analysis`](b200_mutation_analysis/), [`b200_prefix_replay`](b200_prefix_replay/), [`b200_vllm031`](b200_vllm031/), [`release_serving`](release_serving/).
 - [`fp4_stability`](fp4_stability/): the FlashQLA training backend checks
   `patch_tilelang_fp16.py` against the installed kernel manifest, and the
   script finds that install from its own depth.

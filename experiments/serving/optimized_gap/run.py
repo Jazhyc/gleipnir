@@ -111,7 +111,7 @@ def score(name: str) -> None:
     subprocess_stage(
         [
             "-m",
-            "experiments.b200_vllm031.runtime",
+            "gleipnir.serving.stack.environment",
             "-m",
             "experiments.teachers.teacher_seed_variation.run",
             "--stage",

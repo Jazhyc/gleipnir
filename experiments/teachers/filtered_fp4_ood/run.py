@@ -10,10 +10,10 @@ from pathlib import Path
 
 import yaml
 
-from experiments.b200_vllm031.runtime import candidate_environment
 from gleipnir.adapters.merge import merge_checkpoint
 from gleipnir.campaigns.runtime import training_environment
 from gleipnir.data.monitoring import file_hash, read_rows, write_json
+from gleipnir.serving.stack.environment import candidate_environment
 
 
 def load_config():

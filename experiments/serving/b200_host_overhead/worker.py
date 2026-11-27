@@ -4,9 +4,9 @@ import os
 import time
 from typing import Any
 
-from experiments.b200_gdn_fast.worker import FastGdnWorker
-from experiments.b200_last_layer_trim.worker import LastQueryPrecisionWorker
 from experiments.serving.b200_host_overhead.tracing import allow_profiler_attach
+from gleipnir.serving.stack.workers.gdn_fast import FastGdnWorker
+from gleipnir.serving.stack.workers.last_query import LastQueryPrecisionWorker
 
 
 class HostTimingMixin:

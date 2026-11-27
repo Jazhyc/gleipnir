@@ -161,8 +161,8 @@ def run(model: str, session: str, levels: list[int], repeats: int, limit: int | 
 
     import httpx
 
-    from experiments.b200_vllm031.runtime import candidate_environment
     from experiments.serving.qwen38_27b_serving.bench import workloads
+    from gleipnir.serving.stack.environment import candidate_environment
 
     instruction = INSTRUCTION.read_text().strip()
     if hashlib.sha256(INSTRUCTION.read_bytes()).hexdigest() != INSTRUCTION_SHA256:

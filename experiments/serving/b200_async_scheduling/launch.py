@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-SYNC_SCHEDULER = "experiments.b200_vllm031.scheduler.Vllm031PoolingScheduler"
+SYNC_SCHEDULER = "gleipnir.serving.stack.scheduler.Vllm031PoolingScheduler"
 ASYNC_SCHEDULER = (
     "experiments.serving.b200_async_scheduling.scheduler.Vllm031AsyncPoolingScheduler"
 )

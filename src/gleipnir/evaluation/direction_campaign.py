@@ -88,7 +88,7 @@ def replacement_command(parent: dict, model: str) -> list[str]:
 
 
 async def replace(c: dict, out: Path, parent: dict, name: str, model: str) -> dict:
-    from experiments.b200_vllm031.runtime import candidate_environment
+    from gleipnir.serving.stack.environment import candidate_environment
 
     checked(c, out)
     retired = subprocess.run(
@@ -119,7 +119,7 @@ async def replace(c: dict, out: Path, parent: dict, name: str, model: str) -> di
             {
                 "upstream_sha256": file_hash(Path(inspect.getfile(scheduler))),
                 "integration_sha256": file_hash(
-                    experiment_dir("b200_vllm031", ROOT) / "scheduler.py"
+                    ROOT / "src/gleipnir/serving/stack/scheduler.py"
                 ),
             }
         ),

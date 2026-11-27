@@ -5,7 +5,7 @@ from pathlib import Path
 
 os.environ["VLLM_LENS_DISABLE"] = "1"
 
-import experiments.b200_attention_precision.server  # noqa: E402,F401
+import gleipnir.serving.stack.server  # noqa: E402,F401
 
 if __name__ == "__main__":
     from vllm.entrypoints.launchers.api_server.entry import main

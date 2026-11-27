@@ -10,14 +10,14 @@ from pathlib import Path
 from experiments.b200_context_million.run import DEFAULT, Variant, run
 
 EXPERIMENT = Path(__file__).parent
-WORKERS = "experiments.b200_last_layer_trim.worker"
+WORKERS = "gleipnir.serving.stack.workers.last_query"
 LAST = Variant(
     experiment=EXPERIMENT,
     result_group="b200_last_layer_trim",
     worker=f"{WORKERS}.LastLayerTrimWorker",
     sources=(
         *DEFAULT.sources,
-        "experiments/b200_last_layer_trim/worker.py",
+        "src/gleipnir/serving/stack/workers/last_query.py",
         "src/gleipnir/serving/last_query_attention.py",
     ),
     checks=(

@@ -3,8 +3,8 @@
 import hashlib
 import json
 
-from experiments.b200_attention_gdn_serving.worker import ROOT, ServingAuditWorker
 from gleipnir.serving.sources import recorded_source_path
+from gleipnir.serving.stack.workers.serving_audit import ROOT, ServingAuditWorker
 
 
 class GdnServingAuditWorker(ServingAuditWorker):

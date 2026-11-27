@@ -15,9 +15,9 @@ from pathlib import Path
 ROOT = next(
     p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
 )
-DEFAULT_WORKER = "experiments.b200_gdn_fast.worker.FastGdnWorker"
-CACHED_WORKER = "experiments.b200_prefix_replay.worker.PrefixCachedFastGdnWorker"
-WORKER_SOURCE = "experiments/b200_prefix_replay/worker.py"
+DEFAULT_WORKER = "gleipnir.serving.stack.workers.gdn_fast.FastGdnWorker"
+CACHED_WORKER = "gleipnir.serving.stack.workers.prefix_cache.PrefixCachedFastGdnWorker"
+WORKER_SOURCE = "src/gleipnir/serving/stack/workers/prefix_cache.py"
 # User decision 2026-10-16: accept cached-scoring drift for opt-in synchronous
 # monitoring (docs/decisions/serving/prefix_cached_serving.md). Same limits as the
 # campaigns' new-adapter serving parity; the default stack keeps 0.005.

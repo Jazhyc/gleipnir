@@ -76,7 +76,7 @@ def quantized_command(command: list[str], quantization: str, additional: dict) -
     same server and harness but must not inherit that label.
     """
     command[command.index("-m") + 1] = (
-        "experiments.serving.qwen38_27b_serving.quant_server"
+        "gleipnir.serving.stack.quant_server"
     )
     command += ["--quantization", quantization]
     i = command.index("--additional-config") + 1

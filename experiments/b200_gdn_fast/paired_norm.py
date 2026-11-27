@@ -28,11 +28,11 @@ C1 = {
     "synthetic_32k": (32768, 5),
 }
 SOURCES = (
-    "experiments/b200_last_layer_trim/worker.py",
+    "src/gleipnir/serving/stack/workers/last_query.py",
     "src/gleipnir/serving/last_query_attention.py",
-    "experiments/b200_gdn_route/worker.py",
+    "src/gleipnir/serving/stack/workers/gdn_route.py",
     "src/gleipnir/serving/gdn_route.py",
-    "experiments/b200_gdn_fast/worker.py",
+    "src/gleipnir/serving/stack/workers/gdn_fast.py",
     "src/gleipnir/serving/gdn_fast.py",
 )
 
@@ -44,7 +44,7 @@ def stack_command(command: list[str]) -> list[str]:
     worker = command.index("--worker-cls") + 1
     if not command[worker].endswith("AttentionPrecisionWorker"):
         raise ValueError("base worker changed")
-    command[worker] = "experiments.b200_gdn_fast.worker.FastGdnWorker"
+    command[worker] = "gleipnir.serving.stack.workers.gdn_fast.FastGdnWorker"
     index = command.index("--additional-config") + 1
     additional = json.loads(command[index])
     for path in SOURCES:

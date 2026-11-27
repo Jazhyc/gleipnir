@@ -3,13 +3,13 @@
 import json
 import os
 import re
-from pathlib import Path
 
 import torch
 from vllm.model_executor.layers.linear import LinearBase, UnquantizedLinearMethod
 from vllm.v1.worker.gpu_worker import Worker
 
-from gleipnir.vllm_frost_fp4 import FrostFp4LinearMethod, runtime_receipt
+from gleipnir.repository import repo_root
+from gleipnir.serving.vllm.frost_fp4 import FrostFp4LinearMethod, runtime_receipt
 
 
 class FrostAuditWorker(Worker):
@@ -46,13 +46,12 @@ class FrostAuditWorker(Worker):
         ):
             raise ValueError("incomplete FROST coverage/checks")
         # The two bounded training comparisons cached unused backward weights.
-        from gleipnir.cudnn_fp4_mlp import clear_native_caches
+        from gleipnir.kernels.fp4.cudnn_fp4_mlp import clear_native_caches
 
         clear_native_caches()
         runtime.update(runtime_receipt())
         path = (
-            Path(__file__).resolve().parents[2]
-            / "results/b200_frost_inference/loaded_precision.json"
+            repo_root(__file__) / "results/b200_frost_inference/loaded_precision.json"
         )
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(

@@ -106,7 +106,7 @@ def retire(ctx: Campaign) -> None:
         [
             ctx.config["serving_python"],
             "-m",
-            "experiments.b200_vllm031.runtime",
+            "gleipnir.serving.stack.environment",
             "-m",
             "experiments.b200_vllm031.stop",
             "--archive-name",

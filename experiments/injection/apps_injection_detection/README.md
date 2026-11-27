@@ -38,6 +38,6 @@ receipts. Resume batches only with identical input/model/runtime/source identity
 No capacity changes. Startup/progress monitoring is active-turn only.
 
 Run `python -m experiments.injection.apps_injection_detection.run --stage prepare`, then
-`--stage evaluate` through the existing `experiments.b200_vllm031.runtime`
+`--stage evaluate` through the existing `gleipnir.serving.stack.environment`
 wrapper. Outputs: `results/apps_injection_detection/presence01/`; logs:
 `logs/runpod/apps_injection_detection/`. Collect artifacts locally on completion.

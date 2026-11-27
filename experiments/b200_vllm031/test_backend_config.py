@@ -4,8 +4,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from experiments.b200_vllm031.backend_config import nonparallel_call, resolver_config
 from gleipnir.serving.compile_cache import ServingCompileConfig
+from gleipnir.serving.stack.backend_config import nonparallel_call, resolver_config
 
 
 def test_resolver_sees_explicit_backend_without_changing_engine_hash(tmp_path):

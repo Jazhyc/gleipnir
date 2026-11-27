@@ -8,9 +8,9 @@ from pathlib import Path
 
 import torch
 
-from experiments.b200_attention_gdn_serving.worker import ROOT, write
-from experiments.b200_monitor_score.worker import MonitorScoreAuditWorker
 from gleipnir.serving.gdn.state import make_forward, validate_native
+from gleipnir.serving.stack.workers.monitor_score import MonitorScoreAuditWorker
+from gleipnir.serving.stack.workers.serving_audit import ROOT, write
 
 
 class GdnStateMonitorScoreAuditWorker(MonitorScoreAuditWorker):

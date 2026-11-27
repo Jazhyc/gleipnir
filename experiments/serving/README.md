@@ -34,3 +34,4 @@ directly under `experiments/`; see
 | [`qwen38_27b_serving`](qwen38_27b_serving/) | Arithmetic-preserving serving optimizations for Qwen3.8-27B |
 | [`runpod_gleipnir4b_id`](runpod_gleipnir4b_id/) | Runpod B200 setup and Gleipnir 4B ID inference |
 | [`serving_concurrency`](serving_concurrency/) | Serving throughput and latency by step and concurrency |
+| [`serving_stack_promotion`](serving_stack_promotion/) | Serving stack promotion check |

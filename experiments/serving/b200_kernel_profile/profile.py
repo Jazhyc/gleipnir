@@ -23,10 +23,10 @@ from experiments.b200_context_million.run import (
 from experiments.b200_inference_benchmark.run import DATA, ROOT, sha, write
 from experiments.b200_last_layer_trim.run import LAST
 from experiments.b200_monitor_score.run import SERVING, trial
-from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
 from experiments.serving.b200_kernel_profile.analyze import summarize
 from experiments.serving.b200_long_context.run import gpu, rpc
 from gleipnir.serving.reference import selected_serving_default
+from gleipnir.serving.stack.source_bindings import restore_diagnostic_sources
 
 EXPERIMENT = Path(__file__).parent
 
@@ -89,7 +89,7 @@ async def run(name: str, phases: list[str] | None = None) -> None:
 
     binding = {
         "upstream_sha256": sha(Path(inspect.getfile(scheduler))),
-        "integration_sha256": sha(ROOT / "experiments/b200_vllm031/scheduler.py"),
+        "integration_sha256": sha(ROOT / "src/gleipnir/serving/stack/scheduler.py"),
     }
     if binding != selection["scheduler_binding"]:
         raise ValueError("accepted pooling scheduler source changed")

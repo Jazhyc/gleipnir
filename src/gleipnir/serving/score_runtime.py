@@ -33,7 +33,7 @@ def resume_score_environment(
         raise ValueError("retired-parent staged runtime identity changed")
     frontend_command = parent["command"].copy()
     frontend_command[frontend_command.index("-m") + 1] = (
-        "experiments.b200_attention_gdn_serving.server"
+        "gleipnir.serving.stack.registry"
     )
     configure_frontend(root, parent["frontend"], frontend_command, env)
     env["GLEIPNIR_FROST_WRAPPER_VALIDATION"] = parent["host_wrapper"]["validation"]

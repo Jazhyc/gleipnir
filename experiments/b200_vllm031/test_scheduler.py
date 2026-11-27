@@ -44,7 +44,7 @@ def make_scheduler(monkeypatch, *, adaptive=False, active=None, corrected=True):
         KVCacheGroupSpec,
     )
 
-    from experiments.b200_vllm031.scheduler import Vllm031PoolingScheduler
+    from gleipnir.serving.stack.scheduler import Vllm031PoolingScheduler
 
     monkeypatch.setenv("VLLM_USE_V2_MODEL_RUNNER", "0")
     config = EngineArgs(

@@ -1,7 +1,7 @@
 """Serve the ordinary unquantized model with the existing monitor API."""
 
-from experiments.b200_vllm031.backend_config import install
 from gleipnir.repository import repo_root
+from gleipnir.serving.stack.backend_config import install
 
 install()
 

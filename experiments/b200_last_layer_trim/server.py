@@ -1,6 +1,6 @@
 """Precision server with the last-query tail registered as a splitting op."""
 
-import experiments.b200_attention_precision.server  # noqa: F401
+import gleipnir.serving.stack.server  # noqa: F401
 from gleipnir.repository import repo_root
 from gleipnir.serving.last_query_tail import register
 

@@ -36,7 +36,7 @@ Run `python -m experiments.injection.b200_apps.run --stage prepare --name apps02
 the compiled scorer with `experiments.b200_attention_precision.startup --name
 apps_default02`, then
 run `--stage score --name apps02`. Preparation and scoring use the staged 0.31
-interpreter via `experiments.b200_vllm031.runtime`. Analyze locally with
+interpreter via `gleipnir.serving.stack.environment`. Analyze locally with
 `python -m experiments.injection.b200_apps.run --stage analyze --name apps02`.
 Artifacts live under `results/b200_apps/`; logs under `logs/runpod/b200_apps/`.
 The [completed finding](../../../docs/findings/injection/b200_apps.md) records injection

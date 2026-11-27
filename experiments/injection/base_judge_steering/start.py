@@ -13,10 +13,10 @@ from pathlib import Path
 
 import httpx
 
-from experiments.b200_vllm031.runtime import candidate_environment
 from gleipnir.data.monitoring import file_hash, write_json
 from gleipnir.evaluation.direction_campaign import info, replacement_command
 from gleipnir.repository import repo_root
+from gleipnir.serving.stack.environment import candidate_environment
 
 ROOT = repo_root(__file__)
 ACTIVE = ROOT / "results/b200_attention_gdn_serving/server.json"
@@ -69,7 +69,7 @@ async def start(config: dict, out: Path, parent: dict) -> dict:
             {
                 "upstream_sha256": file_hash(Path(inspect.getfile(scheduler))),
                 "integration_sha256": file_hash(
-                    ROOT / "experiments/b200_vllm031/scheduler.py"
+                    ROOT / "src/gleipnir/serving/stack/scheduler.py"
                 ),
             }
         ),

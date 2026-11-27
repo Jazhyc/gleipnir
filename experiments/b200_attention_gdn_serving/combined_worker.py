@@ -2,7 +2,7 @@
 
 from experiments.b200_attention_gdn_serving.fa4_worker import Fa4ServingAuditWorker
 from experiments.b200_attention_gdn_serving.gdn_worker import GdnServingAuditWorker
-from experiments.b200_attention_gdn_serving.mixed_worker import MixedServingAuditWorker
+from gleipnir.serving.stack.workers.mixed import MixedServingAuditWorker
 
 
 class MixedFa4ServingAuditWorker(MixedServingAuditWorker, Fa4ServingAuditWorker):

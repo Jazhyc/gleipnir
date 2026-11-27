@@ -297,7 +297,7 @@ def test_retired_runtime_preserves_identity_caches_and_parent(tmp_path, monkeypa
     assert env["VLLM_CACHE_ROOT"] == "/persistent/cache" and "unrelated" not in env
     assert env["GLEIPNIR_STRIDE_VALIDATION"] == "results/mutation.json"
     assert parent["command"][2] == "experiments.b200_mutation_analysis.server"
-    assert frontend_calls[0][2][2] == "experiments.b200_attention_gdn_serving.server"
+    assert frontend_calls[0][2][2] == "gleipnir.serving.stack.registry"
     parent["local_runtime"]["manifest_sha256"] = "drift"
     with pytest.raises(ValueError, match="runtime identity changed"):
         resume_score_environment(tmp_path, parent, base)

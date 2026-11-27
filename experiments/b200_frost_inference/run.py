@@ -64,7 +64,7 @@ def main() -> None:
         "src/gleipnir/kernels/fp4/cudnn_fp4_mlp.py",
         "src/gleipnir/training/backends/native_fp4.py",
         "src/gleipnir/kernels/fp4/nvfp4_pack.py",
-        "experiments/b200_frost_inference/worker.py",
+        "src/gleipnir/serving/stack/workers/frost.py",
     ]
     condition = resolve_condition(
         json.loads((EXPERIMENT / "config.json").read_text()),

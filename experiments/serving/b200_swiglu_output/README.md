@@ -45,11 +45,11 @@ No scheduling tool is available; monitoring continues during the active turn.
 
 ```bash
 PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
-  -m experiments.b200_vllm031.runtime \
+  -m gleipnir.serving.stack.environment \
   -m experiments.serving.b200_swiglu_output.native \
   --output results/b200_swiglu_output/native01.json
 PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
-  -m experiments.b200_vllm031.runtime \
+  -m gleipnir.serving.stack.environment \
   -m experiments.serving.b200_swiglu_output.run --name output01 \
   --native-receipt results/b200_swiglu_output/native01.json
 ```

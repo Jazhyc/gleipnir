@@ -11,10 +11,8 @@ import time
 from pathlib import Path
 from typing import Any
 
-from gleipnir.repository import experiment_dir
-
 VERSION = "0.10.0"
-ENTRYPOINT = "experiments.b200_inference_benchmark.frontend_server"
+ENTRYPOINT = "gleipnir.serving.stack.frontend"
 
 
 class FrontendControl:
@@ -125,8 +123,12 @@ def configure_frontend(
     receipt = json.loads(validation.read_text())
     if receipt.get("exact") is not True or receipt.get("version") != VERSION:
         raise ValueError("native Gigatoken validation failed")
+    from gleipnir.serving.sources import promoted_module, recorded_source_matches
+
     source = root / "src/gleipnir/serving/gigatoken.py"
-    if receipt["source_sha256"] != sha(source):
+    if not recorded_source_matches(
+        root, "src/gleipnir/serving/gigatoken.py", receipt["source_sha256"]
+    ):
         raise ValueError("native Gigatoken validation source drift")
     package = Path(frontend["package_path"])
     if not (package / "gigatoken").is_dir():
@@ -135,7 +137,7 @@ def configure_frontend(
         if sha(package / path) != digest:
             raise ValueError("native Gigatoken package drift")
     index = command.index("-m") + 1
-    if command[index] != "experiments.b200_attention_gdn_serving.server":
+    if promoted_module(command[index]) != "gleipnir.serving.stack.registry":
         raise ValueError("frontend wrapper requires the validated GPU registry loader")
     command[index] = ENTRYPOINT
     env["PYTHONPATH"] = f"{package}:{env['PYTHONPATH']}"
@@ -150,10 +152,8 @@ def configure_frontend(
         "validation_sha256": sha(validation),
         "source_sha256": sha(source),
         "package_files": receipt["package_files"],
-        "entrypoint_sha256": sha(
-            experiment_dir("b200_inference_benchmark", root) / "frontend_server.py"
-        ),
-        "gpu_registry_module": "experiments.b200_attention_gdn_serving.server",
+        "entrypoint_sha256": sha(root / "src/gleipnir/serving/stack/frontend.py"),
+        "gpu_registry_module": "gleipnir.serving.stack.registry",
     }
 
 

@@ -7,11 +7,11 @@ from collections import Counter
 
 import torch
 
-from experiments.b200_attention_gdn_serving.swiglu_native_output_worker import (
+from gleipnir.serving.sources import recorded_source_matches
+from gleipnir.serving.stack.workers.native_output import (
     NativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker,
 )
-from experiments.b200_attention_gdn_serving.worker import ROOT, write
-from gleipnir.serving.sources import recorded_source_path
+from gleipnir.serving.stack.workers.serving_audit import ROOT, write
 
 
 class PromptOnlyNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
@@ -62,12 +62,7 @@ class PromptOnlyNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
         ):
             raise ValueError("prompt-only native admission failed")
         for source, expected in receipt["sources"].items():
-            if (
-                hashlib.sha256(
-                    recorded_source_path(ROOT, source).read_bytes()
-                ).hexdigest()
-                != expected
-            ):
+            if not recorded_source_matches(ROOT, source, expected):
                 raise ValueError(f"prompt-only admission source drift: {source}")
         config = self.vllm_config
         if config.scheduler_config.enable_chunked_prefill or (
@@ -75,7 +70,7 @@ class PromptOnlyNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
         ):
             raise ValueError("prompt-only mode requires unchunked, fresh requests")
         super().load_model(load_dummy_weights=load_dummy_weights)
-        from gleipnir.serving_prompt_only import install
+        from gleipnir.serving.prompt_only import install
 
         seen = set()
         audit = {

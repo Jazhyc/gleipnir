@@ -90,7 +90,7 @@ gaps between steps.
   profiler inflates host time, so the traced shares are upper bounds.
 - **Cause.** The serving engine runs `--no-async-scheduling`. vLLM 0.31
   disables async scheduling for pooling runners, and the zero-output-token
-  scheduler correction (`experiments/b200_vllm031/scheduler.py`) requires it
+  scheduler correction (`src/gleipnir/serving/stack/scheduler.py`) requires it
   off. Step N+1's scheduling and input preparation therefore cannot overlap
   step N's GPU work. Async scheduling would hide both the step-start
   preparation and the between-step gap. That bounds the gain at roughly 3–7%

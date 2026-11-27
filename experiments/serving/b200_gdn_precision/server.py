@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-import experiments.b200_vllm031.server  # noqa: F401
+import gleipnir.serving.stack.migration_server  # noqa: F401
 import gleipnir.serving.vllm.gdn_precision  # noqa: F401
 
 if __name__ == "__main__":

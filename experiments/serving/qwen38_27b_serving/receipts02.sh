@@ -3,7 +3,7 @@
 # on the pinned base while the merged checkpoint is being rebuilt.
 set -euo pipefail
 cd /workspace/gleipnir
-PY="/tmp/gleipnir-vllm031-runtime/bin/python -m experiments.b200_vllm031.runtime"
+PY="/tmp/gleipnir-vllm031-runtime/bin/python -m gleipnir.serving.stack.environment"
 export PYTHONPATH=src:.
 MODEL=${1:-.cache/huggingface/hub/models--Qwen--Qwen3.8-27B/snapshots/1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0}
 OUT=results/qwen38_27b_serving

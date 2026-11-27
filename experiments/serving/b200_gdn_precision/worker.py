@@ -6,8 +6,6 @@ from collections import Counter
 
 import torch
 
-from experiments.b200_attention_gdn_serving.worker import write
-from experiments.b200_attention_precision.worker import AttentionPrecisionWorker
 from experiments.b200_inference_benchmark.run import ROOT, sha
 from gleipnir.serving.gdn_precision import (
     EXPECTED,
@@ -15,6 +13,8 @@ from gleipnir.serving.gdn_precision import (
     projection_identity,
     validate_native,
 )
+from gleipnir.serving.stack.workers.attention_precision import AttentionPrecisionWorker
+from gleipnir.serving.stack.workers.serving_audit import write
 from gleipnir.serving.vllm.gdn_precision import AuditedGdnFp8Method, install_audit
 
 

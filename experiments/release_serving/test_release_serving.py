@@ -49,8 +49,11 @@ def _long_context_case(tmp_path: Path, key: str):
         sources=(str(source),) if target.long_context.sources else (),
     )
     target = dataclasses.replace(target, long_context=spec)
-    command = json.loads((ROOT / TARGETS[key].server_receipt).read_text())["command"]
-    return extend_context, target, command
+    from gleipnir.serving.sources import promote_command
+
+    recorded = json.loads((ROOT / TARGETS[key].server_receipt).read_text())["command"]
+    # prepare() promotes the recorded command before applying image options.
+    return extend_context, target, promote_command(ROOT, recorded)
 
 
 @pytest.mark.parametrize("key", sorted(TARGETS))

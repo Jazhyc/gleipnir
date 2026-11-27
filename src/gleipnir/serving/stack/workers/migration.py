@@ -2,8 +2,8 @@
 
 import os
 
-from experiments.b200_attention_gdn_serving.worker import write
-from experiments.b200_monitor_score.worker import MonitorScoreAuditWorker
+from gleipnir.serving.stack.workers.monitor_score import MonitorScoreAuditWorker
+from gleipnir.serving.stack.workers.serving_audit import write
 
 
 class MigrationWorker(MonitorScoreAuditWorker):

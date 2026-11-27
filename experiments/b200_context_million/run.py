@@ -17,7 +17,6 @@ from pathlib import Path
 import httpx
 import numpy as np
 
-from experiments.b200_context_million.envelope import validate
 from experiments.b200_context_million.environment import (
     GpuSampler,
     drift,
@@ -27,18 +26,19 @@ from experiments.b200_context_million.environment import (
 from experiments.b200_inference_benchmark.run import DATA, ROOT, sha, write
 from experiments.b200_monitor_score.run import SERVING, trial
 from experiments.b200_vllm031.run import archive_audits
-from experiments.b200_vllm031.runtime import candidate_environment
-from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
 from experiments.serving.b200_long_context.run import gpu, rpc, synthetic
 from gleipnir.inference_benchmark import paired_score_summary, ranking_comparison
 from gleipnir.serving.reference import selected_serving_default
+from gleipnir.serving.stack.environment import candidate_environment
+from gleipnir.serving.stack.long_context_envelope import validate
+from gleipnir.serving.stack.source_bindings import restore_diagnostic_sources
 
 EXPERIMENT = Path(__file__).parent
-WORKER = "experiments.b200_context_million.worker.LongContextWorker"
+WORKER = "gleipnir.serving.stack.workers.long_context.LongContextWorker"
 # The selected default, before and after last-query attention was adopted.
 PARENT_WORKERS = {
-    "experiments.b200_attention_precision.worker.AttentionPrecisionWorker",
-    "experiments.b200_last_layer_trim.worker.LastQueryPrecisionWorker",
+    "gleipnir.serving.stack.workers.attention_precision.AttentionPrecisionWorker",
+    "gleipnir.serving.stack.workers.last_query.LastQueryPrecisionWorker",
 }
 
 
@@ -50,8 +50,8 @@ class Variant:
     result_group: str = "b200_context_million"
     worker: str = WORKER
     sources: tuple[str, ...] = (
-        "experiments/b200_context_million/worker.py",
-        "experiments/b200_context_million/envelope.py",
+        "src/gleipnir/serving/stack/workers/long_context.py",
+        "src/gleipnir/serving/stack/long_context_envelope.py",
     )
     # (module, receipt filename, environment variable naming the receipt path)
     checks: tuple[tuple[str, str, str], ...] = field(default_factory=tuple)
@@ -91,7 +91,7 @@ def phase_command(
     command[command.index("--max-model-len") + 1] = str(phase["context_limit"])
     command[command.index("--worker-cls") + 1] = variant.worker
     if variant.server is not None:
-        if command[1:3] != ["-m", "experiments.b200_attention_precision.server"]:
+        if command[1:3] != ["-m", "gleipnir.serving.stack.server"]:
             raise ValueError("selected precision server module changed")
         command[2] = variant.server
     index = command.index("--additional-config") + 1
@@ -415,7 +415,7 @@ async def run(name: str, phases: list[str] | None, variant: Variant = DEFAULT) -
 
         binding = {
             "upstream_sha256": sha(Path(inspect.getfile(scheduler))),
-            "integration_sha256": sha(ROOT / "experiments/b200_vllm031/scheduler.py"),
+            "integration_sha256": sha(ROOT / "src/gleipnir/serving/stack/scheduler.py"),
         }
         if binding != selection["scheduler_binding"]:
             raise ValueError("accepted pooling scheduler source changed")

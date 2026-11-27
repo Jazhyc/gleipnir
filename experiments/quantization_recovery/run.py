@@ -103,8 +103,8 @@ def prepare(config):
 
 
 def server_command(config, output, *, bf16, model):
-    from experiments.b200_vllm031.runtime import candidate_environment
     from gleipnir.serving.reference import selected_serving_default
+    from gleipnir.serving.stack.environment import candidate_environment
 
     selection, command = selected_serving_default(ROOT)
     command[0] = config["serving_python"]
@@ -123,7 +123,7 @@ def server_command(config, output, *, bf16, model):
             mxfp8_coordinate_repair="typed_int32",
             merged_model=str(model),
         )
-        from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
+        from gleipnir.serving.stack.source_bindings import restore_diagnostic_sources
 
         archive = ROOT / "results/b200_vllm031/pre_migration_sources.tar.gz"
         restored = restore_diagnostic_sources(ROOT, data["serving_condition"], archive)
@@ -410,7 +410,7 @@ def main():
                     "-m",
                     "experiments.quantization_recovery.evaluate",
                 ]
-                from experiments.b200_vllm031.runtime import candidate_environment
+                from gleipnir.serving.stack.environment import candidate_environment
 
                 subprocess.run(
                     serving_command,

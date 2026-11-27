@@ -7,9 +7,9 @@ from collections import Counter
 
 import torch
 
-from experiments.b200_attention_gdn_serving.mxfp8_worker import Mxfp8ServingAuditWorker
-from experiments.b200_attention_gdn_serving.worker import ROOT, write
-from gleipnir.serving.sources import recorded_source_path
+from gleipnir.serving.sources import recorded_source_matches
+from gleipnir.serving.stack.workers.mxfp8 import Mxfp8ServingAuditWorker
+from gleipnir.serving.stack.workers.serving_audit import ROOT, write
 
 
 class PreparationMxfp8ServingAuditWorker(Mxfp8ServingAuditWorker):
@@ -46,19 +46,14 @@ class PreparationMxfp8ServingAuditWorker(Mxfp8ServingAuditWorker):
                     "FP4 preparation strict precision failed; diagnostic disabled"
                 )
             for source, expected_hash in receipt["sources"].items():
-                if (
-                    hashlib.sha256(
-                        recorded_source_path(ROOT, source).read_bytes()
-                    ).hexdigest()
-                    != expected_hash
-                ):
+                if not recorded_source_matches(ROOT, source, expected_hash):
                     raise ValueError(f"FP4 preparation source drift: {source}")
             receipts[stage] = receipt
             hashes[stage] = hashlib.sha256(raw).hexdigest()
         # The unchanged baseline audits validate packed weights before installing
         # candidate activation arithmetic. Their receipts retain that scope.
         super().load_model(load_dummy_weights=load_dummy_weights)
-        from gleipnir.serving_fp4_integration import install
+        from gleipnir.serving.fp4.integration import install
 
         calls = []
         expected_calls = (

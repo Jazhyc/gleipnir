@@ -190,7 +190,7 @@ def launch(ctx: PaucContext, stage: str) -> None:
         stage,
     ]
     if stage == "evaluate":
-        command[1:1] = ["-m", "experiments.b200_vllm031.runtime"]
+        command[1:1] = ["-m", "gleipnir.serving.stack.environment"]
     env = training_environment(ROOT, NAME) if stage != "evaluate" else dict(os.environ)
     env.update(
         PYTHONPATH=f"{ROOT / 'src'}:{ROOT}:{env.get('PYTHONPATH', '')}",

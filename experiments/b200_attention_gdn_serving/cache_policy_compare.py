@@ -301,7 +301,7 @@ async def launch(phase: str, output: Path, base: dict, manifest: dict) -> None:
         )
         sources.update(
             [
-                "experiments/b200_attention_gdn_serving/prompt_only_worker.py",
+                "src/gleipnir/serving/stack/workers/prompt_only.py",
                 "experiments/b200_attention_gdn_serving/prompt_only_canary.py",
             ]
         )

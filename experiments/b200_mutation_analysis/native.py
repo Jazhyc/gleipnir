@@ -13,10 +13,9 @@ import torch
 import triton
 from vllm.model_executor.layers import fused_qk_norm_rope as module
 
-from gleipnir.repository import repo_root
 from gleipnir.serving.triton_mutation import KERNEL, OUTPUTS, install, original_analysis
 
-ROOT = repo_root(__file__)
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def inputs(rows: int, strided: bool = False) -> tuple:

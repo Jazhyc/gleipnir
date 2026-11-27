@@ -16,7 +16,6 @@ from pathlib import Path
 
 import httpx
 
-from experiments.b200_vllm031.runtime import candidate_environment
 from gleipnir.data.monitoring import (
     digest,
     file_hash,
@@ -34,6 +33,7 @@ from gleipnir.evaluation.injection_presence import (
 )
 from gleipnir.repository import repo_root
 from gleipnir.serving.monitor_score import validate_score_response
+from gleipnir.serving.stack.environment import candidate_environment
 from gleipnir.teachers.prompt_contract import load_prompt_set
 
 ROOT = repo_root(__file__)
@@ -202,7 +202,7 @@ async def start(config: dict, out: Path, role: str) -> dict:
             {
                 "upstream_sha256": file_hash(Path(inspect.getfile(scheduler))),
                 "integration_sha256": file_hash(
-                    ROOT / "experiments/b200_vllm031/scheduler.py"
+                    ROOT / "src/gleipnir/serving/stack/scheduler.py"
                 ),
             }
         ),

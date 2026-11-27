@@ -2,8 +2,8 @@
 
 import os
 
-from experiments.b200_attention_gdn_serving.worker import write
-from experiments.b200_gdn_fast.worker import FastGdnWorker
+from gleipnir.serving.stack.workers.gdn_fast import FastGdnWorker
+from gleipnir.serving.stack.workers.serving_audit import write
 
 
 class LeanDispatchMixin:

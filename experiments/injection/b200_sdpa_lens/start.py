@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import importlib.metadata
-import inspect
 import json
 import os
 import shutil
@@ -59,15 +58,14 @@ def lens_command(parent: dict, model: str) -> list[str]:
 
 
 async def start(name: str, *, config_path: Path = CONFIG) -> None:
-    from vllm.v1.core.sched import scheduler
 
-    from experiments.b200_vllm031.runtime import candidate_environment
     from experiments.injection.b200_vllm_lens.smoke import smoke
     from experiments.injection.b200_vllm_lens.verify_client import verify
     from experiments.serving.b200_long_context.run import gpu
     from gleipnir.campaigns.monitoring.evaluation import agreement
     from gleipnir.evaluation.http_score import score_batch
     from gleipnir.serving.reference import selected_serving_default
+    from gleipnir.serving.stack.environment import candidate_environment
 
     config = json.loads(config_path.read_text())
     out = ROOT / "results/b200_sdpa_lens" / name
@@ -106,12 +104,9 @@ async def start(name: str, *, config_path: Path = CONFIG) -> None:
         if file_hash(OVERLAY / filename) != sha:
             raise ValueError(f"restored Lens drift: {filename}")
     selection, _ = selected_serving_default(ROOT)
-    binding = {
-        "upstream_sha256": file_hash(Path(inspect.getfile(scheduler))),
-        "integration_sha256": file_hash(ROOT / "experiments/b200_vllm031/scheduler.py"),
-    }
-    if binding != selection["scheduler_binding"]:
-        raise ValueError("pooling scheduler drift")
+    from gleipnir.serving.sources import scheduler_binding as live_binding
+
+    binding = live_binding(ROOT, selection["scheduler_binding"])
     sources = {}
     for filename in (
         "experiments/injection/b200_sdpa_lens/start.py",

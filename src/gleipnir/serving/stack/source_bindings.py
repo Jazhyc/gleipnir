@@ -6,6 +6,7 @@ import tarfile
 from pathlib import Path
 
 from gleipnir._compat import canonical_source_reference
+from gleipnir.serving.sources import recorded_source_matches
 
 
 def restore_diagnostic_sources(
@@ -26,7 +27,7 @@ def restore_diagnostic_sources(
             path = root / canonical_source_reference(relative)
             if not path.resolve().is_relative_to(root.resolve()):
                 continue  # External dependencies retain their independent checks.
-            if hashlib.sha256(path.read_bytes()).hexdigest() == expected:
+            if recorded_source_matches(root, relative, expected):
                 continue
             if not relative.startswith("experiments/") or not (
                 path.name.endswith(("_canary.py", "_compare.py"))

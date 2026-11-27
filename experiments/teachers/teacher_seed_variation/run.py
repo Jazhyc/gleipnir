@@ -124,7 +124,7 @@ def score(name: str) -> None:
         ctx.logs / "merge.log",
     )
     subprocess_stage(
-        ["-m", "experiments.b200_vllm031.runtime", *module, "score", name],
+        ["-m", "gleipnir.serving.stack.environment", *module, "score", name],
         ctx.config["serving_python"],
         dict(os.environ),
         ctx.logs / "score.log",

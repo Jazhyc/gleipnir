@@ -6,7 +6,6 @@ import argparse
 import asyncio
 import gc
 import importlib.metadata
-import inspect
 import json
 import shutil
 import subprocess
@@ -318,11 +317,10 @@ def evaluation_gate(gate: dict, *, diagnostic: bool) -> None:
 
 
 async def score(precision: str) -> None:
-    from vllm.v1.core.sched import scheduler
 
     from experiments.b200_vllm031.run import archive_audits
-    from experiments.b200_vllm031.runtime import candidate_environment
-    from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
+    from gleipnir.serving.stack.environment import candidate_environment
+    from gleipnir.serving.stack.source_bindings import restore_diagnostic_sources
 
     manifest = check(model=True)
     selection, _ = selected_serving_default(ROOT)
@@ -330,12 +328,9 @@ async def score(precision: str) -> None:
         "runtime"
     ]:
         raise ValueError("selected serving runtime changed")
-    binding = {
-        "upstream_sha256": file_hash(Path(inspect.getfile(scheduler))),
-        "integration_sha256": file_hash(ROOT / "experiments/b200_vllm031/scheduler.py"),
-    }
-    if binding != selection["scheduler_binding"]:
-        raise ValueError("pooling scheduler source changed")
+    from gleipnir.serving.sources import scheduler_binding as live_binding
+
+    binding = live_binding(ROOT, selection["scheduler_binding"])
     if (ACTIVE / "server.json").exists():
         raise ValueError("retire the prior model before scoring")
     pids = subprocess.check_output(

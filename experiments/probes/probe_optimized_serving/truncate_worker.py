@@ -36,8 +36,8 @@ from pathlib import Path
 import torch
 from torch import nn
 
-from experiments.b200_gdn_fast.worker import FastGdnWorker
 from experiments.probes.probe_optimized_serving.keys import token_key
+from gleipnir.serving.stack.workers.gdn_fast import FastGdnWorker
 
 # A constant, not an option: this file's hash joins the serving compile
 # identity (start.py), so truncated and full-depth graphs never share an AOT

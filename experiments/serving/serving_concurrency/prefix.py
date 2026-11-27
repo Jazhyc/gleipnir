@@ -19,10 +19,10 @@ from experiments.serving.serving_concurrency.run import OUT, PORT, launch, prepa
 
 CACHED = {
     "gleipnir.serving.bf16_worker.Bf16Worker": "PrefixBf16Worker",
-    "experiments.b200_attention_precision.worker.AttentionPrecisionWorker": (
+    "gleipnir.serving.stack.workers.attention_precision.AttentionPrecisionWorker": (
         "PrefixQuantWorker"
     ),
-    "experiments.b200_gdn_fast.worker.FastGdnWorker": "PrefixFastWorker",
+    "gleipnir.serving.stack.workers.gdn_fast.FastGdnWorker": "PrefixFastWorker",
 }
 WORKERS = "experiments.serving.serving_concurrency.workers"
 

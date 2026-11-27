@@ -188,6 +188,79 @@ MODULE_ALIASES = {
     "experiments.tool_trajectory_monitoring.prompting": (
         "gleipnir.teachers.prompt_contract"
     ),
+    # Serving stack runtime promoted from experiments (2026-11-27).
+    "experiments.b200_attention_gdn_serving.server": (
+        "gleipnir.serving.stack.registry"
+    ),
+    "experiments.b200_inference_benchmark.frontend_server": (
+        "gleipnir.serving.stack.frontend"
+    ),
+    "experiments.b200_attention_gdn_serving.prompt_only_trace": (
+        "gleipnir.serving.stack.prompt_only_trace"
+    ),
+    "experiments.b200_monitor_score.server": ("gleipnir.serving.stack.score_server"),
+    "experiments.b200_vllm031.backend_config": (
+        "gleipnir.serving.stack.backend_config"
+    ),
+    "experiments.b200_vllm031.server": ("gleipnir.serving.stack.migration_server"),
+    "experiments.b200_attention_precision.server": ("gleipnir.serving.stack.server"),
+    "experiments.qwen38_27b_serving.quant_server": (
+        "gleipnir.serving.stack.quant_server"
+    ),
+    "experiments.serving.qwen38_27b_serving.quant_server": (
+        "gleipnir.serving.stack.quant_server"
+    ),
+    "experiments.b200_vllm031.scheduler": ("gleipnir.serving.stack.scheduler"),
+    "experiments.b200_vllm031.runtime": ("gleipnir.serving.stack.environment"),
+    "experiments.b200_vllm031.source_bindings": (
+        "gleipnir.serving.stack.source_bindings"
+    ),
+    "experiments.b200_context_million.envelope": (
+        "gleipnir.serving.stack.long_context_envelope"
+    ),
+    "experiments.b200_frost_inference.worker": ("gleipnir.serving.stack.workers.frost"),
+    "experiments.b200_attention_gdn_serving.worker": (
+        "gleipnir.serving.stack.workers.serving_audit"
+    ),
+    "experiments.b200_attention_gdn_serving.mixed_worker": (
+        "gleipnir.serving.stack.workers.mixed"
+    ),
+    "experiments.b200_attention_gdn_serving.mxfp8_worker": (
+        "gleipnir.serving.stack.workers.mxfp8"
+    ),
+    "experiments.b200_attention_gdn_serving.prepare_worker": (
+        "gleipnir.serving.stack.workers.preparation"
+    ),
+    "experiments.b200_attention_gdn_serving.tuned_worker": (
+        "gleipnir.serving.stack.workers.tuned"
+    ),
+    "experiments.b200_attention_gdn_serving.attention_fp4_worker": (
+        "gleipnir.serving.stack.workers.attention_fp4"
+    ),
+    "experiments.b200_attention_gdn_serving.swiglu_native_output_worker": (
+        "gleipnir.serving.stack.workers.native_output"
+    ),
+    "experiments.b200_attention_gdn_serving.prompt_only_worker": (
+        "gleipnir.serving.stack.workers.prompt_only"
+    ),
+    "experiments.b200_monitor_score.worker": (
+        "gleipnir.serving.stack.workers.monitor_score"
+    ),
+    "experiments.b200_vllm031.worker": ("gleipnir.serving.stack.workers.migration"),
+    "experiments.b200_attention_precision.worker": (
+        "gleipnir.serving.stack.workers.attention_precision"
+    ),
+    "experiments.b200_context_million.worker": (
+        "gleipnir.serving.stack.workers.long_context"
+    ),
+    "experiments.b200_last_layer_trim.worker": (
+        "gleipnir.serving.stack.workers.last_query"
+    ),
+    "experiments.b200_gdn_route.worker": ("gleipnir.serving.stack.workers.gdn_route"),
+    "experiments.b200_gdn_fast.worker": ("gleipnir.serving.stack.workers.gdn_fast"),
+    "experiments.b200_prefix_replay.worker": (
+        "gleipnir.serving.stack.workers.prefix_cache"
+    ),
 }
 
 
@@ -487,11 +560,12 @@ class _AliasFinder(MetaPathFinder):
     ) -> ModuleSpec | None:
         destination = MODULE_ALIASES.get(fullname)
         if destination is not None:
-            return ModuleSpec(
-                fullname,
-                _AliasLoader(destination),
-                origin=_source_path(destination),
+            loader = (
+                _ExperimentAliasLoader(destination)
+                if fullname.startswith("experiments.")
+                else _AliasLoader(destination)
             )
+            return ModuleSpec(fullname, loader, origin=_source_path(destination))
         destination = canonical_experiment_module(fullname)
         if destination is None:
             return None
@@ -526,9 +600,12 @@ def _experiment_source_path(target: str) -> str | None:
 
 class _ExperimentAliasLoader(_AliasLoader):
     def get_code(self, fullname: str) -> CodeType:
-        """Run the grouped module's own code for ``python -m experiments.<old>``."""
-        origin = _experiment_source_path(self.target)
-        if origin is None:
+        """Run the moved module's own code for ``python -m experiments.<old>``."""
+        if self.target.startswith("gleipnir."):
+            origin = _source_path(self.target)
+        else:
+            origin = _experiment_source_path(self.target)
+        if origin is None or not Path(origin).is_file():
             raise ImportError(f"moved experiment module not found: {self.target}")
         return compile(Path(origin).read_bytes(), origin, "exec")
 

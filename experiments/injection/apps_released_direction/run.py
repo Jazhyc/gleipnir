@@ -72,8 +72,8 @@ def lens_command(template: dict, model: str) -> list[str]:
 
 
 async def start_server(config: dict, inputs: dict, out: Path) -> subprocess.Popen:
-    from experiments.b200_vllm031.runtime import candidate_environment
     from gleipnir.data.monitoring import file_hash
+    from gleipnir.serving.stack.environment import candidate_environment
 
     merged = json.loads(inputs["merged_artifact"].read_text())
     for filename, sha in merged["files_sha256"].items():

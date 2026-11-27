@@ -31,10 +31,12 @@ def _prefix_workers() -> dict:
     Built lazily: importing the 4B workers reads 4B-only receipts, which the
     27B steps above must not depend on.
     """
-    from experiments.b200_attention_precision.worker import AttentionPrecisionWorker
-    from experiments.b200_gdn_fast.worker import FastGdnWorker
-    from experiments.b200_prefix_replay.worker import PrefixCachingMixin
     from gleipnir.serving.bf16_worker import Bf16Worker
+    from gleipnir.serving.stack.workers.attention_precision import (
+        AttentionPrecisionWorker,
+    )
+    from gleipnir.serving.stack.workers.gdn_fast import FastGdnWorker
+    from gleipnir.serving.stack.workers.prefix_cache import PrefixCachingMixin
 
     return {
         "PrefixBf16Worker": type(

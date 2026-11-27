@@ -31,7 +31,7 @@ their SHA-256.
 
 ```bash
 PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
-  -m experiments.b200_vllm031.runtime \
+  -m gleipnir.serving.stack.environment \
   -m experiments.serving.b200_kernel_profile.profile --name profile01
 ```
 

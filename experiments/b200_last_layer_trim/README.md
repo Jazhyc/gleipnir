@@ -88,7 +88,7 @@ or completion. Retire only this run's verified server; never change capacity.
 
 ```bash
 PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
-  -m experiments.b200_vllm031.runtime \
+  -m gleipnir.serving.stack.environment \
   -m experiments.b200_last_layer_trim.run --name trim01
 ```
 

@@ -45,7 +45,7 @@ def test_graph_command_retains_endpoint_precision_and_parent():
     assert json.loads(command[-1])["cudagraph_capture_sizes"][-1] == 32768
     with pytest.raises(ValueError, match="already overrides"):
         graph_command(command, settings, {})
-    parent[2] = "experiments.b200_monitor_score.server"
+    parent[2] = "gleipnir.serving.stack.score_server"
     with pytest.raises(ValueError, match="repaired"):
         graph_command(parent, settings, {})
 

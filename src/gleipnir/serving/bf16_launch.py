@@ -10,7 +10,6 @@ keys; everything else, including the model's own text config, is derived.
 from __future__ import annotations
 
 import importlib.metadata
-import inspect
 import json
 import os
 import signal
@@ -21,8 +20,8 @@ from pathlib import Path
 
 import httpx
 
-from gleipnir.data.monitoring import file_hash, write_json
-from gleipnir.repository import experiment_dir
+from gleipnir.data.monitoring import write_json
+from gleipnir.serving.sources import scheduler_binding as live_scheduler_binding
 
 BF16_WORKER = "gleipnir.serving.bf16_worker.Bf16Worker"
 
@@ -58,18 +57,10 @@ def bf16_command(
 
 def environment(root: Path, selection: dict, audit: Path) -> dict[str, str]:
     """The campaign's BF16 serving environment, with a scheduler binding check."""
-    from vllm.v1.core.sched import scheduler
 
-    from experiments.b200_vllm031.runtime import candidate_environment
+    from gleipnir.serving.stack.environment import candidate_environment
 
-    binding = {
-        "upstream_sha256": file_hash(Path(inspect.getfile(scheduler))),
-        "integration_sha256": file_hash(
-            experiment_dir("b200_vllm031", root) / "scheduler.py"
-        ),
-    }
-    if binding != selection["scheduler_binding"]:
-        raise ValueError("selected pooling scheduler changed")
+    binding = live_scheduler_binding(root, selection["scheduler_binding"])
     env = candidate_environment(root)
     parent = json.loads((root / selection["host_parent"]).read_text())
     env.update(
@@ -89,7 +80,7 @@ def start(
     root: Path, command: list[str], env: dict, log: Path, receipt: Path
 ) -> subprocess.Popen:
     """Start the server in its own session and record its identity."""
-    from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
+    from gleipnir.serving.stack.source_bindings import restore_diagnostic_sources
 
     pids = subprocess.check_output(
         ["nvidia-smi", "--query-compute-apps=pid", "--format=csv,noheader"], text=True

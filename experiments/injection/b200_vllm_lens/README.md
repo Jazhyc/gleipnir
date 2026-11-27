@@ -52,7 +52,7 @@ functional test, not a candidate to promote on ID/OOD.
 ```bash
 PYTHONPATH=src:. .venv-vllm031/bin/python -m experiments.injection.b200_vllm_lens.stage
 PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
-  -m experiments.b200_vllm031.runtime \
+  -m gleipnir.serving.stack.environment \
   -m experiments.injection.b200_vllm_lens.run --name <run>
 ```
 

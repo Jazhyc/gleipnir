@@ -62,7 +62,7 @@ identity-verified server. Do not change capacity or restore another server.
 
 ```bash
 PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
-  -m experiments.b200_vllm031.runtime \
+  -m gleipnir.serving.stack.environment \
   -m experiments.b200_context_million.run --name million01
 ```
 

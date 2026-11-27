@@ -212,7 +212,7 @@ def run():
         command = [
             ctx.config["serving_python"],
             "-m",
-            "experiments.b200_vllm031.runtime",
+            "gleipnir.serving.stack.environment",
             "-m",
             "experiments.evaluation.monitor_score_resolution.run",
             "--stage",

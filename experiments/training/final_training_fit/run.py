@@ -325,7 +325,7 @@ def run():
                     stage,
                 ]
                 if stage == "score":
-                    cmd[1:1] = ["-m", "experiments.b200_vllm031.runtime"]
+                    cmd[1:1] = ["-m", "gleipnir.serving.stack.environment"]
                 env = (
                     training_environment(ROOT, ctx.config["campaign_id"])
                     if stage != "score"

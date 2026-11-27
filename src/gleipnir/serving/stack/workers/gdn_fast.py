@@ -2,8 +2,11 @@
 
 import os
 
-from experiments.b200_attention_gdn_serving.worker import write
-from experiments.b200_gdn_route.worker import GatedPrecisionWorker, GatedTrimWorker
+from gleipnir.serving.stack.workers.gdn_route import (
+    GatedPrecisionWorker,
+    GatedTrimWorker,
+)
+from gleipnir.serving.stack.workers.serving_audit import write
 
 
 class FastGdnMixin:

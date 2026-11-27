@@ -11,12 +11,12 @@ import signal
 from pathlib import Path
 from types import MethodType
 
-from gleipnir.serving_operator_trace import OperatorTrace, PatchSet
+from gleipnir.serving.operator_trace import OperatorTrace, PatchSet
 
 
 def enable_trace(root: Path) -> None:
     """Initialize only in the GPU worker, after direct FROST bindings install."""
-    from experiments.b200_attention_gdn_serving.prompt_only_worker import (
+    from gleipnir.serving.stack.workers.prompt_only import (
         PromptOnlyNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker as Base,
     )
 
@@ -64,10 +64,10 @@ def _install(worker, root: Path, mode: str) -> None:
     import vllm.model_executor.layers.mamba.gdn.qwen_gdn_linear_attn as qwen
     import vllm.model_executor.layers.mamba.ops.causal_conv1d as conv
 
-    import gleipnir.serving_prompt_only as prompt
-    from gleipnir.cudnn_fp4_epilogue import Nvfp4ScaledGemm
-    from gleipnir.serving_fp4_swiglu_native_output import NativeOutputSwiGlu
-    from gleipnir.serving_fp4_swiglu_overhead import OverheadSwiGlu
+    import gleipnir.serving.prompt_only as prompt
+    from gleipnir.kernels.fp4.cudnn_fp4_epilogue import Nvfp4ScaledGemm
+    from gleipnir.serving.fp4.swiglu_native_output import NativeOutputSwiGlu
+    from gleipnir.serving.fp4.swiglu_overhead import OverheadSwiGlu
 
     trace = OperatorTrace(
         worker._prompt_trace_directory,

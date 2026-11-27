@@ -2,11 +2,11 @@
 
 import os
 
-from experiments.b200_attention_gdn_serving.worker import write
-from experiments.b200_last_layer_trim.worker import (
+from gleipnir.serving.stack.workers.last_query import (
     LastLayerTrimWorker,
     LastQueryPrecisionWorker,
 )
+from gleipnir.serving.stack.workers.serving_audit import write
 
 
 def route_threshold(additional: dict) -> int | None:

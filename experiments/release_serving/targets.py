@@ -112,21 +112,21 @@ TARGETS = {
             receipt="results/b200_context_million/million01/native.json",
             receipt_sha256="c4f77178894708d3050ad4f70b3d225d47b96a936914725a2c4d8fc94ba2573b",
             worker=(
-                "experiments.b200_gdn_fast.worker.FastGdnWorker",
-                "experiments.b200_gdn_fast.worker.FastGatedTrimWorker",
+                "gleipnir.serving.stack.workers.gdn_fast.FastGdnWorker",
+                "gleipnir.serving.stack.workers.gdn_fast.FastGatedTrimWorker",
             ),
             sources=(
-                "experiments/b200_context_million/worker.py",
-                "experiments/b200_context_million/envelope.py",
+                "src/gleipnir/serving/stack/workers/long_context.py",
+                "src/gleipnir/serving/stack/long_context_envelope.py",
             ),
             receipt_env="GLEIPNIR_LONG_CONTEXT_VALIDATION",
         ),
         prefix_workers={
-            "experiments.b200_gdn_fast.worker.FastGdnWorker": (
-                "experiments.b200_prefix_replay.worker.PrefixCachedFastGdnWorker"
+            "gleipnir.serving.stack.workers.gdn_fast.FastGdnWorker": (
+                "gleipnir.serving.stack.workers.prefix_cache.PrefixCachedFastGdnWorker"
             ),
-            "experiments.b200_gdn_fast.worker.FastGatedTrimWorker": (
-                "experiments.b200_prefix_replay.worker.PrefixReplayWorker"
+            "gleipnir.serving.stack.workers.gdn_fast.FastGatedTrimWorker": (
+                "gleipnir.serving.stack.workers.prefix_cache.PrefixReplayWorker"
             ),
         },
         graph_sizes=GRAPH_SIZES_4B,
@@ -163,7 +163,7 @@ TARGETS = {
 # Align-mode prefix caching (docs/decisions/prefix_cached_serving.md): opt-in
 # only; cached scores drift from uncached by up to about 0.15.
 PREFIX_CACHE_FLAGS = ["--enable-prefix-caching", "--mamba-cache-mode", "align"]
-PREFIX_WORKER_SOURCE = "experiments/b200_prefix_replay/worker.py"
+PREFIX_WORKER_SOURCE = "src/gleipnir/serving/stack/workers/prefix_cache.py"
 
 # Diagnostic sources whose bytes differ between the two recorded stacks. The
 # 4B restores its archived bytes at launch (``restore_diagnostic_sources``);

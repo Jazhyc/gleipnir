@@ -65,7 +65,7 @@ def test_frontend_binds_package_and_changes_only_cpu_launch(tmp_path):
     source = tmp_path / "src/gleipnir/serving/gigatoken.py"
     source.parent.mkdir(parents=True)
     source.write_text("validated implementation")
-    entry = tmp_path / "experiments/b200_inference_benchmark/frontend_server.py"
+    entry = tmp_path / "src/gleipnir/serving/stack/frontend.py"
     entry.parent.mkdir(parents=True)
     entry.write_text("CPU wrapper")
     package = tmp_path / "vendor"
@@ -92,7 +92,7 @@ def test_frontend_binds_package_and_changes_only_cpu_launch(tmp_path):
     command = [
         "python",
         "-m",
-        "experiments.b200_attention_gdn_serving.server",
+        "gleipnir.serving.stack.registry",
         "--additional-config",
         '{"unchanged_gpu":"bound"}',
     ]
@@ -100,7 +100,7 @@ def test_frontend_binds_package_and_changes_only_cpu_launch(tmp_path):
     receipt = configure_frontend(tmp_path, front, command, env)
     assert receipt["version"] == "0.10.0"
     assert command[-1] == '{"unchanged_gpu":"bound"}'
-    assert command[2] == "experiments.b200_inference_benchmark.frontend_server"
+    assert command[2] == "gleipnir.serving.stack.frontend"
     assert env["PYTHONPATH"] == f"{package}:src"
     module.write_text("changed extension")
     with pytest.raises(ValueError, match="package drift"):

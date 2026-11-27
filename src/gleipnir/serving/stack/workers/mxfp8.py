@@ -6,11 +6,11 @@ import os
 
 import torch
 
-from experiments.b200_attention_gdn_serving.mixed_worker import MixedServingAuditWorker
-from experiments.b200_attention_gdn_serving.worker import ROOT, write
-from gleipnir.serving.sources import recorded_source_path
-from gleipnir.serving_mxfp8 import paged_forward
-from gleipnir.serving_precision import describe_attention_cache
+from gleipnir.serving.mxfp8 import paged_forward
+from gleipnir.serving.precision import describe_attention_cache
+from gleipnir.serving.sources import recorded_source_matches
+from gleipnir.serving.stack.workers.mixed import MixedServingAuditWorker
+from gleipnir.serving.stack.workers.serving_audit import ROOT, write
 
 
 class Mxfp8ServingAuditWorker(MixedServingAuditWorker):
@@ -40,12 +40,7 @@ class Mxfp8ServingAuditWorker(MixedServingAuditWorker):
                 "MXFP8 strict precision failed; diagnostic timing disabled"
             )
         for source, expected in receipt["sources"].items():
-            if (
-                hashlib.sha256(
-                    recorded_source_path(ROOT, source).read_bytes()
-                ).hexdigest()
-                != expected
-            ):
+            if not recorded_source_matches(ROOT, source, expected):
                 raise ValueError(f"MXFP8 validation source drift: {source}")
         calls = []
         write(

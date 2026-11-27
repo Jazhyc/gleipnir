@@ -109,7 +109,7 @@ def main() -> None:
     import torch
 
     import gleipnir.serving_mxfp8 as native
-    from experiments.b200_context_million.envelope import enable
+    from gleipnir.serving.stack.long_context_envelope import enable
 
     enable(native)
     torch.manual_seed(3)

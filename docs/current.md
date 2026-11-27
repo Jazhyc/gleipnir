@@ -87,11 +87,18 @@ inventory: check the provider before assuming a machine or volume exists.
 
 ## Code bound in place
 
-Fifteen experiment directories stay at flat paths because launch gates, the
-released image or text-substitution generators check their bytes; the
+The optimized serving runtime (servers, worker classes, scheduler) lives in
+[`gleipnir.serving.stack`](../src/gleipnir/serving/stack/__init__.py), promoted
+from its experiments on 2026-11-27. Accepted recipes still name the experiment
+modules and source hashes they were validated with;
+[`promotion.json`](../src/gleipnir/serving/stack/promotion.json) maps each to its
+promoted path and hash, and `gleipnir.serving.sources` checks and applies it at
+launch. Its `status` stays `candidate` until a B200 run reproduces the recorded
+scores and the user accepts it. Fifteen experiment directories still stay at
+flat paths because kernel receipts or text-substitution generators bind their
+remaining files; the
 [experiments index](../experiments/README.md#kept-at-their-recorded-paths) lists
-them. Part of the accepted serving stack's runtime (servers, worker classes,
-scheduler) lives there rather than in `src/gleipnir/serving/`.
+them.
 
 ## Next work
 
@@ -101,9 +108,9 @@ scheduler) lives there rather than in `src/gleipnir/serving/`.
 
 ## Open items
 
-- Promote the serving-stack runtime from experiment directories into
-  `src/gleipnir/serving/`. Moving or editing it changes the bound hashes, so it
-  needs a new accepted recipe with a GPU parity run.
+- Validate the promoted serving stack on a B200 (scores against the recorded
+  4B and 27B rows, 96-trajectory throughput), then mark `promotion.json`
+  accepted. A new `gleipnir-serve` image would follow from it.
 - Released adapters never adapted the Gated DeltaNet projections. Include them,
   or ablate them, in future training.
 - SWE-chat deployment thresholds (1% and 0.1% FPR on 16,625 sessions) are

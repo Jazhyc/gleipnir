@@ -1,8 +1,8 @@
 """Explicit A/B head binding around unchanged audited backbone recipes."""
 
-import experiments.b200_monitor_score.worker as monitor_audit
-from experiments.b200_attention_precision.worker import AttentionPrecisionWorker
+import gleipnir.serving.stack.workers.monitor_score as monitor_audit
 from gleipnir.serving.bf16_worker import Bf16Worker
+from gleipnir.serving.stack.workers.attention_precision import AttentionPrecisionWorker
 
 # The old auditor captures these constants at import. Bind only this spawned
 # process to A/B; do not edit its checksum-bound source or monitoring defaults.

@@ -6,35 +6,30 @@ import os
 
 import torch
 
-from experiments.b200_attention_gdn_serving.prepare_worker import (
+from gleipnir.serving.sources import recorded_source_matches
+from gleipnir.serving.stack.workers.preparation import (
     PreparationMxfp8ServingAuditWorker,
 )
-from experiments.b200_attention_gdn_serving.worker import ROOT, write
-from gleipnir.serving.sources import recorded_source_path
+from gleipnir.serving.stack.workers.serving_audit import ROOT, write
 
 
 class TunedPreparationMxfp8ServingAuditWorker(PreparationMxfp8ServingAuditWorker):
     def load_model(self, *, load_dummy_weights: bool = False) -> None:
-        from gleipnir.cudnn_fp4_epilogue import Nvfp4ScaledGemm
-        from gleipnir.serving_fp4_tuning import (
+        from gleipnir.kernels.fp4.cudnn_fp4_epilogue import Nvfp4ScaledGemm
+        from gleipnir.serving.fp4.tuning import (
             SHAPES,
             ShapeTunedGemm,
             retile,
             row_band,
         )
-        from gleipnir.serving_fp4_tuning_validation import validate_selection
+        from gleipnir.serving.fp4.tuning_validation import validate_selection
 
         condition = self.vllm_config.additional_config["serving_condition"]
         raw = (ROOT / condition["gemm_tuning_validation"]).read_bytes()
         receipt = json.loads(raw)
         selected = validate_selection(receipt)
         for source, digest in receipt["sources"].items():
-            if (
-                hashlib.sha256(
-                    recorded_source_path(ROOT, source).read_bytes()
-                ).hexdigest()
-                != digest
-            ):
+            if not recorded_source_matches(ROOT, source, digest):
                 raise ValueError(f"FP4 GEMM tuning source drift: {source}")
         if receipt["gpu"] != torch.cuda.get_device_name():
             raise ValueError("FP4 GEMM tuning hardware changed")

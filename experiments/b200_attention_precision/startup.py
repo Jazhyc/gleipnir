@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import importlib.metadata
-import inspect
 import json
 import subprocess
 import sys
@@ -19,10 +18,10 @@ import numpy as np
 from experiments.b200_inference_benchmark.run import DATA, ROOT, sha, write
 from experiments.b200_monitor_score.run import SERVING, trial
 from experiments.b200_vllm031.run import archive_audits
-from experiments.b200_vllm031.runtime import candidate_environment
-from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
 from experiments.serving.b200_long_context.run import gpu, rpc
 from gleipnir.serving.reference import selected_serving_default
+from gleipnir.serving.stack.environment import candidate_environment
+from gleipnir.serving.stack.source_bindings import restore_diagnostic_sources
 
 
 async def startup(
@@ -51,14 +50,10 @@ async def startup(
         "runtime"
     ]:
         raise ValueError("accepted serving runtime changed")
-    from vllm.v1.core.sched import scheduler
 
-    binding = {
-        "upstream_sha256": sha(Path(inspect.getfile(scheduler))),
-        "integration_sha256": sha(ROOT / "experiments/b200_vllm031/scheduler.py"),
-    }
-    if binding != selection["scheduler_binding"]:
-        raise ValueError("accepted pooling scheduler source changed")
+    from gleipnir.serving.sources import scheduler_binding as live_binding
+
+    binding = live_binding(ROOT, selection["scheduler_binding"])
     command[0] = sys.executable
     if transform is not None:
         # Diagnostic launchers (e.g. host profiling) replace only entry points.

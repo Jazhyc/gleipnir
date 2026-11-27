@@ -2,21 +2,19 @@
 
 import json
 import os
-from pathlib import Path
 
 import torch
 
-from experiments.b200_attention_precision.worker import AttentionPrecisionWorker
-from experiments.b200_context_million.envelope import CHUNK, enable, validate
+from gleipnir.repository import repo_root
+from gleipnir.serving.stack.long_context_envelope import CHUNK, enable, validate
+from gleipnir.serving.stack.workers.attention_precision import AttentionPrecisionWorker
 
-ROOT = next(
-    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
-)
+ROOT = repo_root(__file__)
 
 
 class LongContextWorker(AttentionPrecisionWorker):
     def load_model(self, *, load_dummy_weights: bool = False) -> None:
-        import gleipnir.serving_mxfp8 as native
+        import gleipnir.serving.mxfp8 as native
 
         limit = self.vllm_config.model_config.max_model_len
         receipt = json.loads(

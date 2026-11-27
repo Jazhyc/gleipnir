@@ -5,7 +5,7 @@ import os
 
 import torch
 
-from experiments.b200_attention_gdn_serving.worker import ServingAuditWorker, write
+from gleipnir.serving.stack.workers.serving_audit import ServingAuditWorker, write
 
 
 class Fa4ServingAuditWorker(ServingAuditWorker):

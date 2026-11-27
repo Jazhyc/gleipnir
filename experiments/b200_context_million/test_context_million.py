@@ -24,7 +24,10 @@ def selected_command() -> list[str]:
     summary = ROOT / "results/b200_attention_precision/precision01/fp8/summary.json"
     if not summary.exists():
         pytest.skip("archived FP8 default receipt is not available")
-    return json.loads(summary.read_text())["command"]
+    from gleipnir.serving.sources import promote_command
+
+    # The accepted receipt names the experiment modules; launchers promote it.
+    return promote_command(ROOT, json.loads(summary.read_text())["command"])
 
 
 def test_native_phase_changes_only_length_and_worker():

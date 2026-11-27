@@ -3,7 +3,7 @@
 from experiments.b200_attention_gdn_serving.prefill_graph_worker import (
     PrefillGraphNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker,
 )
-from experiments.b200_monitor_score.worker import MonitorScoreAuditWorker
+from gleipnir.serving.stack.workers.monitor_score import MonitorScoreAuditWorker
 
 
 class GraphMonitorScoreAuditWorker(

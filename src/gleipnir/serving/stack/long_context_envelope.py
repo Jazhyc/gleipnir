@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 from pathlib import Path
 
 LIMIT = 1048576
@@ -35,9 +34,8 @@ def validate(receipt: dict, root: Path, limit: int) -> None:
         raise ValueError("extended native chunk/history coverage failed")
     if limit > max(HISTORIES):
         raise ValueError("serving limit exceeds validated histories")
+    from gleipnir.serving.sources import recorded_source_matches
+
     for name, expected in receipt["sources"].items():
-        path = Path(name)
-        if not path.is_absolute():
-            path = root / path
-        if hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+        if not recorded_source_matches(root, name, expected):
             raise ValueError(f"extended envelope source changed: {name}")

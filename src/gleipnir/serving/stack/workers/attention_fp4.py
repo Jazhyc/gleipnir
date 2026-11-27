@@ -6,25 +6,25 @@ import os
 
 import torch
 
-from experiments.b200_attention_gdn_serving.tuned_worker import (
+from gleipnir.serving.sources import recorded_source_matches
+from gleipnir.serving.stack.workers.serving_audit import ROOT, write
+from gleipnir.serving.stack.workers.tuned import (
     TunedPreparationMxfp8ServingAuditWorker,
 )
-from experiments.b200_attention_gdn_serving.worker import ROOT, write
-from gleipnir.serving.sources import recorded_source_path
 
 
 class AttentionTunedPreparationMxfp8ServingAuditWorker(
     TunedPreparationMxfp8ServingAuditWorker
 ):
     def load_model(self, *, load_dummy_weights: bool = False) -> None:
-        from gleipnir.cudnn_fp4_epilogue import Nvfp4ScaledGemm
-        from gleipnir.serving_attention_fp4 import (
+        from gleipnir.kernels.fp4.cudnn_fp4_epilogue import Nvfp4ScaledGemm
+        from gleipnir.serving.fp4.attention import (
             EXPECTED,
             SHAPES,
             projection_identity,
             validate_native,
         )
-        from gleipnir.serving_fp4_tuning import retile
+        from gleipnir.serving.fp4.tuning import retile
 
         condition = self.vllm_config.additional_config["serving_condition"]
         if condition.get("attention_projection_precision") in {"bf16", "fp8"}:
@@ -37,12 +37,7 @@ class AttentionTunedPreparationMxfp8ServingAuditWorker(
         receipt = json.loads(raw)
         validate_native(receipt)
         for source, digest in receipt["sources"].items():
-            if (
-                hashlib.sha256(
-                    recorded_source_path(ROOT, source).read_bytes()
-                ).hexdigest()
-                != digest
-            ):
+            if not recorded_source_matches(ROOT, source, digest):
                 raise ValueError(f"FP4 attention projection source drift: {source}")
         if receipt["gpu"] != torch.cuda.get_device_name():
             raise ValueError("FP4 projection hardware changed")

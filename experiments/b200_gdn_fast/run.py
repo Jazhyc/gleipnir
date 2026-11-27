@@ -19,10 +19,10 @@ def full_stack(cp_min_tokens: int = 8192):
         gated,
         experiment=EXPERIMENT,
         result_group="b200_gdn_fast",
-        worker="experiments.b200_gdn_fast.worker.FastGatedTrimWorker",
+        worker="gleipnir.serving.stack.workers.gdn_fast.FastGatedTrimWorker",
         sources=(
             *gated.sources,
-            "experiments/b200_gdn_fast/worker.py",
+            "src/gleipnir/serving/stack/workers/gdn_fast.py",
             "src/gleipnir/serving/gdn_fast.py",
         ),
         rpc_audits=(*gated.rpc_audits, ("gdn_fast_audit", "gdn_fast_audit.json")),

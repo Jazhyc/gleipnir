@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import argparse
 import importlib.metadata
-import inspect
 import json
 import shutil
 import signal
@@ -52,17 +51,11 @@ ATTENTION_HEADS = {"27b": (24, 4)}
 
 
 def scheduler_binding(selection: dict) -> dict:
-    from vllm.v1.core.sched import scheduler
 
-    from gleipnir.data.monitoring import file_hash
 
-    binding = {
-        "upstream_sha256": file_hash(Path(inspect.getfile(scheduler))),
-        "integration_sha256": file_hash(ROOT / "experiments/b200_vllm031/scheduler.py"),
-    }
-    if binding != selection["scheduler_binding"]:
-        raise ValueError("selected pooling scheduler changed")
-    return binding
+    from gleipnir.serving.sources import scheduler_binding as live_binding
+
+    return live_binding(ROOT, selection["scheduler_binding"])
 
 
 def extend_context(command: list[str], env: dict, target: Target, limit: int) -> None:
@@ -201,9 +194,10 @@ def prepare(
     without them (the default) the recorded command is replayed, which the
     serving experiments rely on.
     """
-    from experiments.b200_vllm031.runtime import candidate_environment
-    from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
     from gleipnir.serving.reference import selected_serving_default
+    from gleipnir.serving.sources import promote_command
+    from gleipnir.serving.stack.environment import candidate_environment
+    from gleipnir.serving.stack.source_bindings import restore_diagnostic_sources
 
     state = STATE / target.key
     state.mkdir(parents=True, exist_ok=True)
@@ -213,6 +207,9 @@ def prepare(
     command[command.index("--port") + 1] = str(port)
     if command[command.index("--model") + 1] != str(target.merged_path):
         raise ValueError("recorded command and merged artifact disagree")
+    # The recorded command names the experiment modules it was validated with;
+    # serve it on the promoted gleipnir.serving.stack after verifying sources.
+    command = promote_command(ROOT, command)
     if target.key == "27b":
         for relative in SHARED_DIAGNOSTIC_SOURCES:
             shutil.copy2(PRISTINE / relative, ROOT / relative)

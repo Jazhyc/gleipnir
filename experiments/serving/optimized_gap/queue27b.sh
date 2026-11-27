@@ -3,7 +3,7 @@
 # QuantFullWorker, FP8/FP4 geometry, MXFP8 attention, graphs to 2,048 tokens).
 set -euo pipefail
 cd /workspace/gleipnir
-PY="/tmp/gleipnir-vllm031-runtime/bin/python -m experiments.b200_vllm031.runtime"
+PY="/tmp/gleipnir-vllm031-runtime/bin/python -m gleipnir.serving.stack.environment"
 export PYTHONPATH=src:.
 OUT=results/qwen38_27b_serving
 Q=gleipnir_geometry_fp8_fp4
