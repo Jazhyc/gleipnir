@@ -2,7 +2,9 @@
 # Launch the prepared local Slurm sweep and its dependent evaluation job.
 set -euo pipefail
 
-root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+d=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd); while [ ! -f "$d/pyproject.toml" ]; do [ "$d" = / ] && { echo "no checkout above $0" >&2; exit 1; }; d=$(dirname "$d"); done
+
+root="$d"
 cd "${root}"
 
 student_rows="${KIMI_STUDENT_ROWS:-/scratch/s4626451/Aletheias-Quest-Competition/results/blackbox/kimi_k3_tvg_soft_full_plus_liars_v1/train/student_rows.jsonl}"

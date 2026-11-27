@@ -25,7 +25,7 @@ CONTEXT_LIMIT = 262144
 #   score at one request at a time is bit-identical to the recorded command.
 # - Above: the 27B sizes to 2,048 (1,535 keeps the FP4 producer of 1,281 to
 #   1,535 rows) and four sizes to 4,096.
-# Measured in experiments/serving_concurrency (fast_g4096e). The switch at
+# Measured in experiments/serving/serving_concurrency (fast_g4096e). The switch at
 # multiples of 32 was observed on this software stack only: repeat the
 # bit-identity check at concurrency 1 on every rebuild.
 GRAPH_SIZES_4B = (
@@ -160,7 +160,7 @@ TARGETS = {
     ),
 }
 
-# Align-mode prefix caching (docs/decisions/prefix_cached_serving.md): opt-in
+# Align-mode prefix caching (docs/decisions/serving/prefix_cached_serving.md): opt-in
 # only; cached scores drift from uncached by up to about 0.15.
 PREFIX_CACHE_FLAGS = ["--enable-prefix-caching", "--mamba-cache-mode", "align"]
 PREFIX_WORKER_SOURCE = "src/gleipnir/serving/stack/workers/prefix_cache.py"

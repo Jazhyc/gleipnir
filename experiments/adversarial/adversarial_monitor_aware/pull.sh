@@ -10,7 +10,8 @@ vm=${1:-ib-cpu-1}
 zone=${2:-asia-south1-a}
 project=${GCP_PROJECT:-avid-renderer-503311-n6}
 export CLOUDSDK_ACTIVE_CONFIG_NAME=${CLOUDSDK_ACTIVE_CONFIG_NAME:-swarm}
-repo=$(cd "$(dirname "$0")/../.." && pwd)
+d=$(cd "$(dirname "$0")" && pwd); while [ ! -f "$d/pyproject.toml" ]; do [ "$d" = / ] && { echo "no checkout above $0" >&2; exit 1; }; d=$(dirname "$d"); done
+repo=$d
 remote=lab/upstream/gleipnir
 scp_() { gcloud compute scp --zone="$zone" --project="$project" "$@"; }
 

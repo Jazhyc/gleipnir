@@ -12,7 +12,8 @@
 #   CS_SHA256SUMS
 # No secrets are staged; GPU scoring needs none.
 set -euo pipefail
-repo=$(cd "$(dirname "$0")/../.." && pwd)
+d=$(cd "$(dirname "$0")" && pwd); while [ ! -f "$d/pyproject.toml" ]; do [ "$d" = / ] && { echo "no checkout above $0" >&2; exit 1; }; d=$(dirname "$d"); done
+repo=$d
 stage=${1:-$repo/../../cache/cs_score_stage}
 branch=feat/adversarial-stress-tests
 data=data/adversarial_confession_strip

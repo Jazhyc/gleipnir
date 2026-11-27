@@ -16,7 +16,8 @@
 #   SHA256SUMS
 # The Tinker key is not staged; it goes to the VM separately as ~/tinker.env.
 set -euo pipefail
-repo=$(cd "$(dirname "$0")/../.." && pwd)
+d=$(cd "$(dirname "$0")" && pwd); while [ ! -f "$d/pyproject.toml" ]; do [ "$d" = / ] && { echo "no checkout above $0" >&2; exit 1; }; d=$(dirname "$d"); done
+repo=$d
 stage=${1:-$repo/../../cache/ma_vm_stage}
 branch=feat/adversarial-stress-tests
 nat=results/adversarial_cheating_pilot/t_b_conflicting

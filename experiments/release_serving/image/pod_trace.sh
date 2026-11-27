@@ -2,7 +2,7 @@
 # Serve one target with the open() audit trace on, in the default (262K) mode
 # and with --prefix-caching, smoke-test each launch, then stop it and remove
 # the hook. ID agreement passes are not repeated (user decision, 2026-10-21):
-# the 262K stack passed them in experiments/sleightbench_eval run sb01.
+# the 262K stack passed them in experiments/evaluation/sleightbench_eval run sb01.
 # Usage: pod_trace.sh {4b|27b}
 set -euo pipefail
 M=$1

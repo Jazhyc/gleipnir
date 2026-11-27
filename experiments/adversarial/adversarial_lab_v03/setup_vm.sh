@@ -4,7 +4,8 @@
 # Locked environment (same packages as the A100 runs), FLA 0.5.2 overlay, base
 # and v0.3 weights. Needs no secrets.
 set -euo pipefail
-cd "$(dirname "$0")/../.."
+d=$(cd "$(dirname "$0")" && pwd); while [ ! -f "$d/pyproject.toml" ]; do [ "$d" = / ] && { echo "no checkout above $0" >&2; exit 1; }; d=$(dirname "$d"); done
+cd "$d"
 command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader

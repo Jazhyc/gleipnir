@@ -8,7 +8,8 @@
 # fallback for the short convolution.
 set -euo pipefail
 monitor="${1:-4b}"
-cd "$(dirname "$0")/../.."
+d=$(cd "$(dirname "$0")" && pwd); while [ ! -f "$d/pyproject.toml" ]; do [ "$d" = / ] && { echo "no checkout above $0" >&2; exit 1; }; d=$(dirname "$d"); done
+cd "$d"
 
 command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"

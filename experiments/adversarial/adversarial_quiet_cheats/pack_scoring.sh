@@ -8,7 +8,8 @@
 # (arm 1 rows and manifest, plus monitor-aware's canaries), vm_score.sh and
 # SHA256SUMS. No secrets; GPU scoring needs none.
 set -euo pipefail
-repo=$(cd "$(dirname "$0")/../.." && pwd)
+d=$(cd "$(dirname "$0")" && pwd); while [ ! -f "$d/pyproject.toml" ]; do [ "$d" = / ] && { echo "no checkout above $0" >&2; exit 1; }; d=$(dirname "$d"); done
+repo=$d
 stage=${1:-$repo/../../cache/qc_score_stage}
 branch=feat/adversarial-stress-tests
 data=data/adversarial_quiet_cheats/arm1

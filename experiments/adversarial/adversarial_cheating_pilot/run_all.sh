@@ -3,7 +3,8 @@
 # arms are skipped if they would take the spend since the freeze past the
 # budget in config.json; Tinker arms use Tinker credits and have no dollar check.
 set -uo pipefail
-cd "$(dirname "$0")/../.."
+d=$(cd "$(dirname "$0")" && pwd); while [ ! -f "$d/pyproject.toml" ]; do [ "$d" = / ] && { echo "no checkout above $0" >&2; exit 1; }; d=$(dirname "$d"); done
+cd "$d"
 PY=../../.venv-impbench/bin/python
 export PYTHONPATH=src:.
 LOGS=logs/local/adversarial_cheating_pilot

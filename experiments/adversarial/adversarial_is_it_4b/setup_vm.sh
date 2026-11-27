@@ -5,7 +5,8 @@
 #   bash experiments/adversarial/adversarial_is_it_4b/setup_vm.sh          # env + 4B weights
 #   bash experiments/adversarial/adversarial_is_it_4b/setup_vm.sh fetch_27b
 set -euo pipefail
-cd "$(dirname "$0")/../.."
+d=$(cd "$(dirname "$0")" && pwd); while [ ! -f "$d/pyproject.toml" ]; do [ "$d" = / ] && { echo "no checkout above $0" >&2; exit 1; }; d=$(dirname "$d"); done
+cd "$d"
 export PATH="$HOME/.local/bin:$PATH"
 
 if [[ "${1:-}" != "fetch_27b" ]]; then

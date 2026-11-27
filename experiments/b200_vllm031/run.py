@@ -238,8 +238,8 @@ async def run(
             "src/gleipnir/serving/mxfp8.py",
             "src/gleipnir/serving/monitor_score.py",
             "src/gleipnir/serving/compile_cache.py",
-            "experiments/b200_attention_gdn_serving/mxfp8_worker.py",
-            "experiments/b200_attention_gdn_serving/worker.py",
+            "src/gleipnir/serving/stack/workers/mxfp8.py",
+            "src/gleipnir/serving/stack/workers/serving_audit.py",
         }
     )
     source_hashes = {p: sha(ROOT / p) for p in source_paths}
