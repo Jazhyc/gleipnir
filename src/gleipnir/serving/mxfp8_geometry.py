@@ -18,6 +18,7 @@ from unittest.mock import patch
 
 import torch
 
+from gleipnir.repository import repo_root
 from gleipnir.serving import mxfp8 as base
 from gleipnir.serving.mxfp8 import _token_offsets, produce
 from gleipnir.serving.mxfp8_source import hardware_exp2_source
@@ -60,7 +61,7 @@ def forward_plan(
         digest = hashlib.sha256(source.encode()).hexdigest()
         # Same derived-source cache as the 4B module: identical bytes, one file.
         target = (
-            Path(__file__).resolve().parents[3]
+            repo_root(__file__)
             / ".cache/kernels/nvidia_mxfp8/generated"
             / ("serving_exp2_" + digest + ".py")
         )

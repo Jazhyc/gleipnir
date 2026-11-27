@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -15,8 +14,9 @@ from gleipnir.evaluation.metrics import (
     evaluate_binary_monitor,
     normalized_partial_auroc,
 )
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 CONFIG = json.loads((ROOT / "experiments/pplx_decider_ood/config.json").read_text())
 OUT = ROOT / "results/pplx_decider_ood"
 

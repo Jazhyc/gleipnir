@@ -14,7 +14,9 @@ def main() -> None:
     args = parser.parse_args()
     if Path(args.name).name != args.name:
         raise ValueError("validation name must be a stem")
-    root = Path(__file__).resolve().parents[2]
+    root = next(
+        p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+    )
     out = root / "results/b200_vllm031" / args.name
     out.mkdir(parents=True, exist_ok=False)
     report = {"status": "running", "checks": []}

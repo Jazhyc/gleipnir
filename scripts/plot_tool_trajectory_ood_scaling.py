@@ -8,6 +8,8 @@ import re
 import tempfile
 from pathlib import Path
 
+from gleipnir.repository import repo_root
+
 os.environ.setdefault(
     "MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "gleipnir-matplotlib")
 )
@@ -19,7 +21,7 @@ from matplotlib.ticker import FuncFormatter, PercentFormatter
 
 from gleipnir.plotting import ORIGIN_PALETTE, save_figure, set_plot_style
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+REPOSITORY_ROOT = repo_root(__file__)
 DEFAULT_SOURCE = (
     REPOSITORY_ROOT / "docs/research/tool_trajectory_distillation_ood_scaling.md"
 )

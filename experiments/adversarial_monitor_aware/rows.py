@@ -39,7 +39,7 @@ from experiments.adversarial_natural_cheats.trajectories import (
 )
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
+ROOT = next(p for p in HERE.parents if (p / "pyproject.toml").is_file())
 CONFIG = json.loads((HERE / "config.json").read_text())
 SCORING = CONFIG["scoring"]
 DATA = ROOT / SCORING["data"]

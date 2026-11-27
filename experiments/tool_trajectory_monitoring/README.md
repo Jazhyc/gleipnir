@@ -165,7 +165,9 @@ Any wording, delimiter, label, or mapping change changes the computed template
 hash and therefore creates a different teacher-cache identity. Increment
 `prompt_set_id` for an intentional semantic or interface change. Do not reuse a
 teacher cache across prompt hashes. Training and evaluation must load these same
-files through `prompting.py`; they must not carry private inline copies.
+files through [`gleipnir.teachers.prompt_contract`](../../src/gleipnir/teachers/prompt_contract.py)
+(formerly this directory's `prompting.py`); they must not carry private inline
+copies.
 
 ## Prompt-preparation stop condition
 

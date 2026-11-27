@@ -3,6 +3,7 @@ import torch
 from transformers import Qwen3_5ForCausalLM
 from transformers.models.qwen3_5.configuration_qwen3_5 import Qwen3_5TextConfig
 
+from gleipnir.repository import repo_root
 from gleipnir.training.last_layer_trim import (
     LastLayerTrim,
     gradient_parity,
@@ -95,7 +96,6 @@ def test_disabled_trim_is_the_original_forward() -> None:
 
 
 def test_campaign_command_and_validation_bind_the_trim() -> None:
-    from pathlib import Path
 
     from hydra import compose, initialize_config_dir
     from omegaconf import OmegaConf
@@ -103,7 +103,7 @@ def test_campaign_command_and_validation_bind_the_trim() -> None:
     from gleipnir.campaigns.training_command import training_command
     from gleipnir.training.validation import validate_training_metadata
 
-    root = Path(__file__).resolve().parents[2]
+    root = repo_root(__file__)
     with initialize_config_dir(
         config_dir=str(root / "src/gleipnir/configs/systems_screen"),
         version_base=None,

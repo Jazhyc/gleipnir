@@ -11,10 +11,11 @@ from dotenv import dotenv_values
 from huggingface_hub import HfApi, hf_hub_download
 from safetensors import safe_open
 
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from gleipnir.data.monitoring import file_hash, write_json
+from gleipnir.repository import repo_root
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 CAMPAIGN = ROOT / "results/caft-regular-sdpa02"
 OUTPUT = ROOT / "results/concept_ablation_training"

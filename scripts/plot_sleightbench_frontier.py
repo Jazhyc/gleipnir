@@ -16,6 +16,8 @@ import os
 import tempfile
 from pathlib import Path
 
+from gleipnir.repository import repo_root
+
 os.environ.setdefault(
     "MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "gleipnir-matplotlib")
 )
@@ -34,7 +36,7 @@ from scripts.plot_tool_trajectory_ood_frontier import (
     FRONTIER_COST_TOLERANCE,
 )
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+REPOSITORY_ROOT = repo_root(__file__)
 SOURCE = REPOSITORY_ROOT / "results/sleightbench_eval/frontier.json"
 ASSETS = REPOSITORY_ROOT / "outputs/reports/gleipnir_v1_technical_report/assets"
 METRICS = {

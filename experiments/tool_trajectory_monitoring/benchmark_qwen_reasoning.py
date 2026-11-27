@@ -8,7 +8,6 @@ import time
 from pathlib import Path
 from typing import Any
 
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from experiments.tool_trajectory_monitoring.qwen_reasoning_core import (
     atomic_write_json,
     atomic_write_jsonl,
@@ -22,6 +21,7 @@ from experiments.tool_trajectory_monitoring.qwen_reasoning_core import (
 )
 from gleipnir.binary_evaluation import binary_token_ids, score_from_output
 from gleipnir.qwen35_adapter_rebase import sha256_file
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 DEFAULT_CONFIG = Path(
     "experiments/tool_trajectory_monitoring/qwen_reasoning_benchmark.json"

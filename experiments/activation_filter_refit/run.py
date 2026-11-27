@@ -15,8 +15,9 @@ import numpy as np
 from experiments.activation_filter_projection.run import validate_projection
 from experiments.b200_injection_direction.run import apps_report, fit, score_rows
 from gleipnir.data.monitoring import file_hash, read_rows, write_json
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 
 

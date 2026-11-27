@@ -22,8 +22,8 @@ from experiments.local_inference.core import (
 from experiments.tool_trajectory_monitoring import (
     prepare_qwen_reasoning_id_benchmark as source,
 )
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from gleipnir.qwen35_adapter_rebase import sha256_file
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 
 def main() -> None:

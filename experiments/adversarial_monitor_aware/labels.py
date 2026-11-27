@@ -31,7 +31,7 @@ from typing import Any
 from experiments.adversarial_monitor_aware import analyze, leak
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
+ROOT = next(p for p in HERE.parents if (p / "pyproject.toml").is_file())
 CONFIG = json.loads((HERE / "config.json").read_text())
 SPEC = CONFIG["labels"]
 DATA = ROOT / CONFIG["scoring"]["data"]

@@ -12,8 +12,9 @@ from jinja2.sandbox import ImmutableSandboxedEnvironment
 
 from experiments.monitor_injection_augmentation.prepare_eval import verify_evaluation
 from gleipnir.monitoring_campaign_data import digest, file_hash, read_rows, write_json
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 CONFIG = HERE / "config.yaml"
 DATA = ROOT / "data/monitor_injection_augmentation_9b"

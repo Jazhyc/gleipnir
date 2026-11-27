@@ -12,7 +12,9 @@ import json
 from pathlib import Path
 from typing import Any, NamedTuple
 
-ROOT = Path(__file__).resolve().parents[3]
+from gleipnir.repository import repo_root
+
+ROOT = repo_root(__file__)
 APPS_REPO = "Jazhyc/gleipnir-apps-injection-evals"
 APPS_REVISION = "f094c15454e2f07782d58760c519835335693ad3"
 

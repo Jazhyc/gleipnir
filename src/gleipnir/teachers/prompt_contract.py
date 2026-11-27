@@ -1,4 +1,9 @@
-"""Load and render the versioned teacher and student prompt contract."""
+"""Load and render the versioned teacher and student prompt contract.
+
+The prompt files stay with the experiment that froze them, in
+``tool_trajectory_monitoring/prompts``; training and evaluation load them
+only through this module.
+"""
 
 from __future__ import annotations
 
@@ -8,8 +13,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
+from gleipnir.repository import experiment_dir
+
 PromptRole = Literal["teacher", "student"]
-PROMPT_DIRECTORY = Path(__file__).resolve().parent / "prompts"
+PROMPT_DIRECTORY = experiment_dir("tool_trajectory_monitoring") / "prompts"
 MANIFEST_PATH = PROMPT_DIRECTORY / "manifest.json"
 
 

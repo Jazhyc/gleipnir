@@ -24,10 +24,11 @@ from experiments.b200_length_admission.run import (
     require_idle_gpu,
 )
 from experiments.b200_length_admission.traffic import arrival_offsets, replay
+from gleipnir.repository import repo_root
 from gleipnir.serving.length_admission import AdmissionPolicy, LengthAdmissionMixin
 from gleipnir.serving.score_runtime import resume_score_environment
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 
 
 def request(name, length, arrival=100.0, computed=0, blocked=False):

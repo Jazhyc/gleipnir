@@ -2,8 +2,8 @@
 
 from collections import Counter
 
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from gleipnir.data.monitoring import digest, trajectory_from_prompt
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 
 def audit_rows(

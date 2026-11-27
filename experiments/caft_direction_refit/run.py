@@ -18,8 +18,9 @@ from experiments.b200_injection_direction.run import apps_report, fit, score_row
 from experiments.b200_injection_direction.smoke import main as operator_smoke
 from experiments.b200_sdpa_lens.start import OVERLAY, start
 from gleipnir.data.monitoring import file_hash, read_rows, write_json
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 
 

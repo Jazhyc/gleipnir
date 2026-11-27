@@ -16,9 +16,10 @@ from experiments.teacher_disagreement_ood.prepare import (
 )
 from gleipnir.campaigns.monitoring.evaluation import attach_inputs, id_metrics
 from gleipnir.data.monitoring import file_hash, read_rows, write_json
+from gleipnir.repository import repo_root
 from gleipnir.serving.monitor_score import score_payload, validate_score_response
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = repo_root(__file__)
 
 
 def main() -> None:

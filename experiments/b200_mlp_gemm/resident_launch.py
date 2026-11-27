@@ -12,8 +12,9 @@ from pathlib import Path
 
 from experiments.b200_mlp_gemm.resident_protocol import validate_request, write_json
 from gleipnir._compat import canonical_source_reference
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 SOURCE = ROOT / "results/b200_mlp_gemm/warmedprofile01/summary.json"
 SOURCE_SHA = "64507ef439da31bb4294b54cc3f6a310b3e4e662d2a4fe224f3f493cba07c772"
 

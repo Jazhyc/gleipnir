@@ -12,7 +12,9 @@ import hashlib
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 DEFAULT_WORKER = "experiments.b200_gdn_fast.worker.FastGdnWorker"
 CACHED_WORKER = "experiments.b200_prefix_replay.worker.PrefixCachedFastGdnWorker"
 WORKER_SOURCE = "experiments/b200_prefix_replay/worker.py"

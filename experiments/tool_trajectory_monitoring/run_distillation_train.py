@@ -13,8 +13,9 @@ from typing import Any
 from experiments.tool_trajectory_monitoring.distillation_scaling import validate_jobs
 from gleipnir.monitoring_training_command import training_command
 from gleipnir.qwen35_adapter_rebase import MANIFEST_NAME, rebase_adapter
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:

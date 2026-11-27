@@ -9,7 +9,9 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 OUT = ROOT / "results/inkling_ood"
 RUNS = {
     "inkling_effort_none": OUT / "inkling_effort_none",

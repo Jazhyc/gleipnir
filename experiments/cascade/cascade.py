@@ -13,14 +13,14 @@ from __future__ import annotations
 
 import json
 import random
-from pathlib import Path
 
 import numpy as np
 
 from experiments.teacher_seed_variation.compare import load, summary
 from gleipnir.data.monitoring import read_rows, write_json
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 OUT = ROOT / "results/cascade"
 HOURLY = 7.99
 # Benchmark-reference optimized-serving throughput (prompt tokens/s).

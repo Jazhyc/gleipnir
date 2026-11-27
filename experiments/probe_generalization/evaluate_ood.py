@@ -27,8 +27,9 @@ import torch
 from gleipnir.evaluation.metrics import evaluate_binary_monitor
 from gleipnir.probes.store import Store
 from gleipnir.probes.training import make_sweep, score
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 # Budget-extension rule: a cell selected at the last checkpoint extends its
 # backbone's sweep to EXTENDED_EPOCH, adding the EXTRA_CHECKPOINTS, before any
 # OOD read (epoch 12 added by user decision after the prompted epoch-8 ID read).

@@ -15,12 +15,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from experiments.tool_trajectory_monitoring.prompting import (
+from gleipnir.repository import experiment_dir, repo_root
+from gleipnir.teachers.prompt_contract import (
     PromptTemplate,
     load_prompt_set,
 )
 
-DEFAULT_CONFIG = Path("experiments/training_injection_census/config.json")
+DEFAULT_CONFIG = (
+    experiment_dir("training_injection_census") / "config.json"
+).relative_to(repo_root(__file__))
 ASSISTANT_SUFFIX = "<|im_start|>assistant\n<think>\n\n</think>\n\n"
 CONTROLS = [
     (

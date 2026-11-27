@@ -22,8 +22,9 @@ import torch
 
 from gleipnir.probes import fp8
 from gleipnir.probes.training import make_sweep, score
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 LAYER = 15
 PART_ROWS = 256
 

@@ -15,8 +15,9 @@ import numpy as np
 
 from gleipnir.data.monitoring import file_hash, read_rows, write_json
 from gleipnir.evaluation.lens_capture import capture_rows
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).parent
 CONFIG = HERE / "config.json"
 ACTIVE = ROOT / "results/b200_attention_gdn_serving/server.json"

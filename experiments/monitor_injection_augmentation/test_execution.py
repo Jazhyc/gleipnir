@@ -11,9 +11,9 @@ from experiments.monitor_injection_augmentation.prepare import CONFIG, template_
 from experiments.monitor_injection_augmentation.prepare_eval import synthetic_views
 from experiments.monitor_injection_augmentation.train import make_job
 from experiments.monitoring_hard_labels.prepare import resolved_profile
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from gleipnir.monitoring_campaign_data import digest, trajectory_from_prompt
 from gleipnir.monitoring_training_command import training_command
+from gleipnir.teachers.prompt_contract import load_prompt_set
 from gleipnir.transcript_injection import remove_message
 
 

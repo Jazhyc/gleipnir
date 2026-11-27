@@ -1,5 +1,4 @@
 import math
-from pathlib import Path
 
 import pytest
 import yaml
@@ -11,8 +10,9 @@ from experiments.gleipnir27b_teacher_4b.prepare import (
     gleipnir_targets,
 )
 from gleipnir.data.monitoring import digest
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 
 
 def control() -> dict:

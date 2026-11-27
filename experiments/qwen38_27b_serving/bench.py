@@ -15,6 +15,7 @@ from pathlib import Path
 
 from experiments.b200_monitor_score.run import trial
 from gleipnir.data.monitoring import file_hash, write_json
+from gleipnir.repository import repo_root
 from gleipnir.serving import bf16_launch
 from gleipnir.serving.benchmark import (
     measurement_summary,
@@ -22,7 +23,7 @@ from gleipnir.serving.benchmark import (
     ranking_comparison,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 DATA = ROOT / "data/b200_inference_benchmark"
 OUT = ROOT / "results/qwen38_27b_serving"

@@ -9,7 +9,9 @@ import platform
 import subprocess
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 PACKAGES = (
     "vllm",
     "torch",

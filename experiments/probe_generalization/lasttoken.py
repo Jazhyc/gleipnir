@@ -16,8 +16,9 @@ import numpy as np
 import pandas as pd
 
 from gleipnir.evaluation.metrics import evaluate_binary_monitor
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 C_GRID = (1e-3, 1e-2, 1e-1, 1.0)
 
 

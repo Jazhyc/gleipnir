@@ -5,14 +5,13 @@ import argparse
 import json
 from pathlib import Path
 
+from gleipnir.repository import repo_root
 from gleipnir.serving_runtime import DEFAULT_RUNTIME, stage_runtime
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--root", type=Path, default=Path(__file__).resolve().parents[1]
-    )
+    parser.add_argument("--root", type=Path, default=repo_root(__file__))
     parser.add_argument("--target", type=Path, default=DEFAULT_RUNTIME)
     args = parser.parse_args()
     receipt = stage_runtime(args.root, args.target)

@@ -15,7 +15,7 @@ from experiments.tool_trajectory_monitoring.prepare_distillation_ood import (
     extract_trajectory,
     sha256_file,
 )
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 
 def typed_reasoning(messages: list[dict[str, Any]]) -> list[str]:

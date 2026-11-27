@@ -20,7 +20,9 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 PARITY_MIN_CORRELATION = 0.999
 LOGIT_MIN_CORRELATION = 0.999
 MAX_PAUROC_DELTA = 0.005

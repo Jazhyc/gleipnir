@@ -17,7 +17,6 @@ from experiments.monitor_injection_augmentation.prepare import (
     verify_preparation,
 )
 from experiments.monitoring_hard_labels.prepare import validate_holdout
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from gleipnir.monitoring_campaign_data import (
     digest,
     file_hash,
@@ -26,6 +25,7 @@ from gleipnir.monitoring_campaign_data import (
     write_json,
     write_rows,
 )
+from gleipnir.teachers.prompt_contract import load_prompt_set
 from gleipnir.transcript_injection import (
     ROLES,
     balanced_choices,

@@ -10,12 +10,25 @@ import experiments.b200_attention_gdn_serving.server  # noqa: F401
 if validation := os.environ.get("GLEIPNIR_FROST_WRAPPER_VALIDATION"):
     from gleipnir.serving_frost_wrappers import enable_worker_control
 
-    enable_worker_control(Path(__file__).resolve().parents[2], validation)
+    enable_worker_control(
+        next(
+            p
+            for p in Path(__file__).resolve().parents
+            if (p / "pyproject.toml").is_file()
+        ),
+        validation,
+    )
 
 if os.environ.get("GLEIPNIR_PROMPT_ONLY_TRACE"):
     from experiments.b200_attention_gdn_serving.prompt_only_trace import enable_trace
 
-    enable_trace(Path(__file__).resolve().parents[2])
+    enable_trace(
+        next(
+            p
+            for p in Path(__file__).resolve().parents
+            if (p / "pyproject.toml").is_file()
+        )
+    )
 
 if __name__ == "__main__":
     import json
@@ -24,7 +37,13 @@ if __name__ == "__main__":
     from gleipnir.serving_compile_cache import install_compile_identity
     from gleipnir.serving_gigatoken import install_native_encoder
 
-    install_compile_identity(Path(__file__).resolve().parents[2])
+    install_compile_identity(
+        next(
+            p
+            for p in Path(__file__).resolve().parents
+            if (p / "pyproject.toml").is_file()
+        )
+    )
     install_native_encoder()
     if "--additional-config" in sys.argv:
         additional = json.loads(sys.argv[sys.argv.index("--additional-config") + 1])

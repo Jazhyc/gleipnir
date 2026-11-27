@@ -29,7 +29,7 @@ import numpy as np
 from experiments.adversarial_monitor_aware.monitor_analysis import auroc, lines
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
+ROOT = next(p for p in HERE.parents if (p / "pyproject.toml").is_file())
 CONFIG = json.loads((HERE / "config.json").read_text())
 PLAN = CONFIG["analysis"]
 DATA = ROOT / CONFIG["data"]

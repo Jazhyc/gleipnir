@@ -7,6 +7,7 @@ import torch
 from torch import nn
 
 from gleipnir.data.monitoring import file_hash
+from gleipnir.repository import repo_root
 from gleipnir.training.concept_ablation import install, project_residual
 
 
@@ -62,7 +63,7 @@ def test_campaign_routes_frozen_direction_to_training_command() -> None:
     from gleipnir.campaigns.monitoring.contract import Campaign
     from gleipnir.campaigns.training_command import training_command
 
-    root = Path(__file__).resolve().parents[2]
+    root = repo_root(__file__)
     ctx = Campaign.load(root, Path(__file__).with_name("config.yaml"))
     job = ctx.job()
     assert job["concept_ablation_path"] == str(ctx.input("concept_direction"))

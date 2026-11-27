@@ -10,7 +10,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 DEFAULT_SOURCE = Path(
     "data/tool_trajectory_monitoring/teacher_ood_benchmark/prompts.jsonl"

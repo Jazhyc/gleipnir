@@ -14,7 +14,7 @@ from experiments.tool_trajectory_monitoring.prepare_distillation_ood import (
     read_jsonl,
     sha256_file,
 )
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 EXPECTED_ROWS = 3_012
 EXPECTED_COUNTS = {

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-from pathlib import Path
 
 from experiments.b200_prefix_replay.session import (
     SENTINEL,
@@ -13,8 +12,9 @@ from experiments.b200_prefix_replay.session import (
     policies,
 )
 from gleipnir.data.monitoring import file_hash, read_rows, write_json
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 SOURCE = ROOT / "data/teacher-disagreement-delta000-sdpa04/training.jsonl"
 TOKENIZER = ROOT / "data/judge_injection_continuation/tokenizer"
 OUT = ROOT / "data/b200_prefix_replay"

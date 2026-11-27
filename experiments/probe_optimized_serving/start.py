@@ -23,7 +23,9 @@ import sys
 import tempfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 OVERLAY = "/tmp/gleipnir-vllm-lens-1.3.0"
 SHARED_SOURCE = "experiments/probe_optimized_serving/truncate_worker.py"
 # target: (recorded worker, truncated worker, sources bound into the compile identity)

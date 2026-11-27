@@ -4,11 +4,11 @@ import hashlib
 
 import pytest
 
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from experiments.tool_trajectory_monitoring.structured_output_canary import (
     compare_paired_scores,
     prepare_paired_prompts,
 )
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 
 def input_rows() -> list[dict]:

@@ -34,8 +34,9 @@ from gleipnir.probes.architectures import WIDTH
 from gleipnir.probes.bank import ProbeBank
 from gleipnir.probes.store import Store
 from gleipnir.probes.training import autocast, make_sweep, stream
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 MODEL_ID = "Qwen/Qwen3.5-4B"
 MODEL_REVISION = "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a"
 SKIP = 1  # NTP attention sink, dropped as in the probe study

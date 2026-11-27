@@ -9,8 +9,9 @@ from pathlib import Path
 import numpy as np
 
 from gleipnir.data.monitoring import file_hash, read_rows, write_json
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 TEACHER = "data/teacher-disagreement-delta000-sdpa04/teacher.jsonl"
 TEACHER_SHA256 = "ba8b8b9cf5dc0a5d4e325be75612923d67cd250df31138c0c8b7c08e3d2e59bd"
 STUDENT_ID = {

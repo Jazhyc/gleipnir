@@ -22,7 +22,6 @@ from experiments.monitoring_hard_labels.prepare import (
     validate_holdout,
 )
 from experiments.tool_trajectory_monitoring.benchmark_gpt_oss_ood import summarize
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from gleipnir.monitoring_campaign_data import (
     file_hash,
     read_rows,
@@ -31,6 +30,7 @@ from gleipnir.monitoring_campaign_data import (
     write_rows,
 )
 from gleipnir.monitoring_campaign_evaluation import EvaluationContext, serving
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 OOD_CONFIG = Path(__file__).with_name("ood_config.yaml")
 MANIFEST = DATA / "ood.manifest.json"

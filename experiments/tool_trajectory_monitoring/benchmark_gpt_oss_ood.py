@@ -14,7 +14,6 @@ from typing import Any
 
 import pandas as pd
 
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from experiments.tool_trajectory_monitoring.qwen_reasoning_core import (
     atomic_write_json,
     atomic_write_jsonl,
@@ -23,6 +22,7 @@ from experiments.tool_trajectory_monitoring.qwen_reasoning_core import (
 )
 from gleipnir.binary_evaluation import binary_token_ids, logprob_value, metric_views
 from gleipnir.qwen35_adapter_rebase import sha256_file
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 DEFAULT_CONFIG = Path(
     "experiments/tool_trajectory_monitoring/gpt_oss_ood_benchmark.json"

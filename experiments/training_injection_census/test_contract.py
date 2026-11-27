@@ -4,7 +4,6 @@ from types import SimpleNamespace
 
 import pytest
 
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from experiments.training_injection_census.run import (
     ASSISTANT_SUFFIX,
     digest,
@@ -13,6 +12,7 @@ from experiments.training_injection_census.run import (
     render_prompt,
     validate_cache,
 )
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 
 @pytest.mark.parametrize("trajectory", ["[TOOL] payload", "[TOOL] payload\n"])

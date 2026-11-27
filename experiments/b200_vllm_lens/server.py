@@ -14,7 +14,13 @@ if __name__ == "__main__":
     from gleipnir.serving.gigatoken import install_native_encoder
     from gleipnir.serving.lens_api import install_lens_api
 
-    install_compile_identity(Path(__file__).resolve().parents[2])
+    install_compile_identity(
+        next(
+            p
+            for p in Path(__file__).resolve().parents
+            if (p / "pyproject.toml").is_file()
+        )
+    )
     install_native_encoder()
     install_lens_api()
     main()

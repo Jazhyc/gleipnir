@@ -2,9 +2,10 @@
 
 import runpy
 import sys
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+from gleipnir.repository import repo_root
+
+ROOT = repo_root(__file__)
 sys.path.insert(0, str(ROOT / ".cache/kernels/flashqla-da06429"))
 
 from gleipnir.vllm_frost_fp4 import FrostFp4Config  # noqa: E402,F401

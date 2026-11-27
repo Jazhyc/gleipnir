@@ -8,7 +8,9 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 HERE = Path(__file__).resolve().parent
 OUT = ROOT / "results/gleipnir4b_serving_ladder"
 LOGS = ROOT / "logs/runpod/gleipnir4b_serving_ladder"

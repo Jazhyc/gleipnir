@@ -16,14 +16,14 @@ from __future__ import annotations
 
 import json
 import re
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from gleipnir.evaluation.metrics import normalized_partial_auroc
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 OUT = ROOT / "results/optimized_gap"
 INPUTS = ROOT / "data/student_injection_awareness/regular/ood.jsonl"
 SHADE_PARQUET = ROOT / (

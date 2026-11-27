@@ -11,8 +11,9 @@ import numpy as np
 from sklearn.metrics import roc_auc_score
 
 from gleipnir.evaluation.metrics import normalized_partial_auroc
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 OUT = ROOT / "results/qwen27b_generations_ood"
 KIMI = ROOT / "data/tool_trajectory_monitoring/distillation_scaling/soft_targets.jsonl"
 STRICT = ROOT / "data/teacher-disagreement-delta000-sdpa04/training.jsonl"

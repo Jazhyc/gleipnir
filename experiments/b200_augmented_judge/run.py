@@ -28,10 +28,11 @@ from gleipnir.data.monitoring import (
 )
 from gleipnir.evaluation.http_score import score_batch
 from gleipnir.evaluation.preferences import summarize_preferences
+from gleipnir.repository import repo_root
 from gleipnir.serving.bf16_monitor import command as bf16_command
 from gleipnir.serving.reference import selected_serving_default
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).parent
 CONFIG = HERE / "config.yaml"
 C = yaml.safe_load(CONFIG.read_text())

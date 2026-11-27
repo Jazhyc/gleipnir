@@ -26,8 +26,9 @@ from experiments.probe_optimized_serving.diag_compare import stats
 from gleipnir.probes import fp8
 from gleipnir.probes.store import Store
 from gleipnir.probes.training import make_sweep, score
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 MIN_CORRELATION = 0.99
 
 

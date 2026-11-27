@@ -44,8 +44,9 @@ from gleipnir.data.monitoring import (
     write_json,
     write_rows,
 )
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 OUT = ROOT / "results/aux_supervision"
 CONTROL = "teacher-seed-sdpa-s1-01"
@@ -107,7 +108,7 @@ def receipt(arm: str, name: str) -> Path:
 
 
 def student_template(arm: str):
-    from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
+    from gleipnir.teachers.prompt_contract import load_prompt_set
 
     return student_aux_template() if arm == ARM else load_prompt_set().student
 

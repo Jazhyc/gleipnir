@@ -11,7 +11,9 @@ import sys
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 
 
 def write_status(path: Path, **values: object) -> None:

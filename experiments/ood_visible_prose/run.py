@@ -17,7 +17,7 @@ from experiments.ood_visible_prose.restoration import (
     restore_cua,
     verify_provenance,
 )
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 
 def file_hash(path: Path) -> str:

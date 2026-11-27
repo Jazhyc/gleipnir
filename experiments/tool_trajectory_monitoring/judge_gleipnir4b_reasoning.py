@@ -19,8 +19,9 @@ import requests
 from dotenv import load_dotenv
 
 from gleipnir.openrouter import RETRYABLE_STATUS_CODES, retry_delay_seconds
+from gleipnir.repository import repo_root
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+REPOSITORY_ROOT = repo_root(__file__)
 DEFAULT_CONFIG = Path(__file__).with_name("gleipnir4b_reasoning_judge.json")
 VALID_CRITICAL_ERRORS = frozenset(
     {

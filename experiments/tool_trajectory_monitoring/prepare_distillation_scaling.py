@@ -32,8 +32,8 @@ from experiments.tool_trajectory_monitoring.prepare_teacher_training_cache impor
     SOURCE_SHA256,
     extract_trajectory,
 )
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from gleipnir.qwen35_adapter_rebase import sha256_file
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 MODEL_ID = "Qwen/Qwen3.5-9B"
 MODEL_REVISION = "c202236235762e1c871ad0ccb60c8ee5ba337b9a"

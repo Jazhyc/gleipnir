@@ -18,10 +18,11 @@ import numpy as np
 from sklearn.metrics import roc_auc_score
 
 from gleipnir.evaluation.metrics import normalized_partial_auroc
+from gleipnir.repository import repo_root
 
 # Data and results are git-ignored; point GLEIPNIR_DATA_ROOT at the checkout
 # that holds them.
-ROOT = Path(os.environ.get("GLEIPNIR_DATA_ROOT", Path(__file__).resolve().parents[2]))
+ROOT = Path(os.environ.get("GLEIPNIR_DATA_ROOT", repo_root(__file__)))
 DATA = ROOT / "data/adversarial_evilgenie/rows_4b-v03.jsonl"
 OUT = ROOT / "results/adversarial_evilgenie"
 MILD = "lcb_arc191_c"

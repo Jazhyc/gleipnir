@@ -21,6 +21,7 @@ from gleipnir.data.monitoring import (
     validate_targets,
     write_json,
 )
+from gleipnir.repository import experiment_dir, repo_root
 
 REGISTRY = {"id": ("id",), "apps": ("benchmark", "honest_controls")}
 QWEN38_27B_PROFILES = (
@@ -36,7 +37,7 @@ class Campaign:
     root: Path
     config_path: Path
     config: dict
-    source_root: Path = Path(__file__).resolve().parents[4]
+    source_root: Path = repo_root(__file__)
 
     @classmethod
     def load(cls, root: Path, config_path: Path) -> Campaign:
@@ -210,17 +211,20 @@ class Campaign:
     def sources(self) -> dict[str, str]:
         paths = []
         for directory in (
-            "src/gleipnir",
-            "experiments/deception_distillation",
-            "experiments/tool_trajectory_monitoring",
-            "experiments/training_procedure_screen",
-            "experiments/b200_vllm031",
-            "experiments/b200_attention_precision",
+            self.source_root / "src/gleipnir",
+            *(
+                experiment_dir(name, self.source_root)
+                for name in (
+                    "deception_distillation",
+                    "tool_trajectory_monitoring",
+                    "training_procedure_screen",
+                    "b200_vllm031",
+                    "b200_attention_precision",
+                )
+            ),
         ):
             paths.extend(
-                p
-                for p in (self.source_root / directory).rglob("*")
-                if p.suffix in (".py", ".yaml", ".json")
+                p for p in directory.rglob("*") if p.suffix in (".py", ".yaml", ".json")
             )
         paths.extend(
             self.source_root / name for name in self.config.get("extra_sources", [])

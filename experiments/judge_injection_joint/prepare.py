@@ -16,8 +16,9 @@ from gleipnir.monitoring_campaign_data import (
     write_json,
     write_rows,
 )
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 CONFIG = HERE / "config.yaml"
 DATA = ROOT / "data/judge_injection_joint"

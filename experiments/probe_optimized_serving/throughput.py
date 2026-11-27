@@ -18,8 +18,9 @@ import json
 from pathlib import Path
 
 from gleipnir.evaluation.http_score import score_batch
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 PROMPTED = ROOT / "data/teacher-disagreement-strict-ood01/workload.jsonl"
 NTP = ROOT / "data/probe_generalization/full/ood.jsonl"
 CONFIG = {"port": 8010, "timeout_seconds": 1800, "concurrency": 128}

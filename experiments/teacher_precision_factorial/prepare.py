@@ -18,8 +18,9 @@ from experiments.teacher_seed_variation.prepare import (
 )
 from gleipnir.campaigns.monitoring.contract import Campaign
 from gleipnir.data.monitoring import file_hash, write_json
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 # Each cell changes only the training profile and its startup reference.
 CELLS = {

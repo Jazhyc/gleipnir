@@ -14,8 +14,9 @@ from experiments.tool_trajectory_monitoring.benchmark_qwen_ood import (
     render_margin_prompt,
 )
 from gleipnir.qwen35_adapter_rebase import sha256_file
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 INPUTS = {
     "id": "data/tool_trajectory_monitoring/teacher_id_benchmark",

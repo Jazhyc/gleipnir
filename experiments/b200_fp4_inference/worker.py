@@ -3,12 +3,12 @@
 import json
 import os
 import re
-from pathlib import Path
 
 import torch
 from vllm.model_executor.layers.linear import LinearBase, UnquantizedLinearMethod
 from vllm.v1.worker.gpu_worker import Worker
 
+from gleipnir.repository import repo_root
 from gleipnir.vllm_online_nvfp4 import OnlineNvFp4Method
 
 
@@ -50,10 +50,7 @@ class Fp4AuditWorker(Worker):
             or len(checks) != 6
         ):
             raise ValueError("incomplete FP4 coverage or native arithmetic checks")
-        path = (
-            Path(__file__).resolve().parents[2]
-            / "results/b200_fp4_inference/loaded_precision.json"
-        )
+        path = repo_root(__file__) / "results/b200_fp4_inference/loaded_precision.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
             json.dumps(

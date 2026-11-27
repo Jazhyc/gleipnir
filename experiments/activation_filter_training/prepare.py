@@ -12,8 +12,9 @@ import yaml
 from gleipnir.data.activation_filter import activation_exclusions, matched_exclusions
 from gleipnir.data.injection_audit import audit_rows
 from gleipnir.data.monitoring import file_hash, read_rows, validate_targets, write_json
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 ACTIVATIONS = (
     ROOT / "results/b200_training_clean_direction/clean_direction01/paired_models.jsonl"

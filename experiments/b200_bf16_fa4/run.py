@@ -15,8 +15,9 @@ from gleipnir.monitoring_systems_screen import sha256_file
 from gleipnir.monitoring_training_command import training_command
 from gleipnir.packed_benchmark import benchmark_environment as packed_environment
 from gleipnir.packed_benchmark import summarize as summarize_trajectory
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 
 
 def benchmark_environment(config: dict) -> dict[str, str]:

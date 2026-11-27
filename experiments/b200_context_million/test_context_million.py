@@ -13,7 +13,9 @@ from experiments.b200_context_million.environment import (
     summarize_samples,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 SETTINGS = json.loads((Path(__file__).with_name("config.json")).read_text())
 PHASES = {p["name"]: p for p in SETTINGS["phases"]}
 

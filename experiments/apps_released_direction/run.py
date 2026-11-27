@@ -22,7 +22,9 @@ from pathlib import Path
 import httpx
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 HERE = Path(__file__).resolve().parent
 OVERLAY = Path("/tmp/gleipnir-vllm-lens-1.3.0")
 PORT = 8010

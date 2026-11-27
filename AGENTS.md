@@ -57,6 +57,12 @@ tools live in `scripts/`. Store raw or materialized inputs under `data/`, output
 under `results/<experiment>/`, and runtime logs under `logs/<platform>/<experiment>/`.
 Those artifact trees are ignored by Git.
 
+Keep code independent of where an experiment directory sits. Find the checkout
+with `gleipnir.repository.repo_root(__file__)` (in runtimes that avoid importing
+`gleipnir`, the first parent holding `pyproject.toml`), never a fixed
+`parents[N]`, and locate another experiment's files with `experiment_dir(name)`.
+Shared code that several experiments or `src/` import belongs in `src/gleipnir/`.
+
 Do not copy upstream datasets into the repository. Record source identifiers,
 revisions, licenses, transformations, prompt hashes, and artifact checksums so
 data can be reconstructed. Treat labels and privileged teacher information as

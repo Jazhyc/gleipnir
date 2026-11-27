@@ -15,7 +15,9 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+REPOSITORY_ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 DEFAULT_INPUT = REPOSITORY_ROOT / "results/ood_recall_at_fpr/recall_at_fpr.json"
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "figures/ood_recall_at_1pct_fpr_frontier.png"
 

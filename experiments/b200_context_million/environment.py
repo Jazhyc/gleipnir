@@ -234,7 +234,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    root = Path(__file__).resolve().parents[2]
+    root = next(
+        p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+    )
     receipt = snapshot(root, raw_directory=args.output.with_suffix(""))
     args.output.write_text(json.dumps(receipt, indent=2) + "\n")
     print(json.dumps(receipt["gpus"], indent=2))

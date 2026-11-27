@@ -8,11 +8,11 @@ from collections import defaultdict
 import numpy as np
 from sklearn.metrics import roc_auc_score
 
-from experiments.tool_trajectory_monitoring.prompting import (
+from gleipnir.evaluation.apps import metrics
+from gleipnir.teachers.prompt_contract import (
     PromptTemplate,
     load_prompt_set,
 )
-from gleipnir.evaluation.apps import metrics
 
 TEMPLATES = ("transfer_gpt4", "transfer_gpt41", "transfer_gpt4o")
 

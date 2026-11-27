@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from gleipnir._compat import canonical_source_reference
+from gleipnir.repository import repo_root
 
 REFERENCE = "results/b200_mlp_gemm/warmed03/causal_adapter/training_metadata.json"
 REFERENCE_SHA256 = "14ab15279bb8895cf32353117d5c1cf957ad45d2b0ca9d7205067db27d77edeb"
@@ -74,7 +75,7 @@ def validate_kernel_sources() -> None:
     """Require the source generation covered by recorded arithmetic validation."""
     for name, expected in KERNEL_SHA256.items():
         relative = canonical_source_reference("src/gleipnir/" + name)
-        source = Path(__file__).resolve().parents[4] / relative
+        source = repo_root(__file__) / relative
         actual = hashlib.sha256(source.read_bytes()).hexdigest()
         if actual != expected:
             raise ValueError(f"validated native FP4 kernel source changed: {name}")

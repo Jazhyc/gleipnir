@@ -20,9 +20,10 @@ from gleipnir.data.monitoring import (
     validate_targets,
     write_json,
 )
+from gleipnir.repository import repo_root
 from gleipnir.training.backends.native_fp4 import REFERENCE_SHA256
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 EXPERIMENT = Path(__file__).parent
 CONFIG = EXPERIMENT / "config.yaml"
 DATA = ROOT / "data/b200_augmented_training"
@@ -84,7 +85,8 @@ def source_paths() -> list[str]:
         "experiments/monitor_injection_augmentation/prepare.py",
         "experiments/monitoring_hard_labels/prepare.py",
         "experiments/monitoring_hard_labels/train.py",
-        "experiments/tool_trajectory_monitoring/prompting.py",
+        "src/gleipnir/teachers/prompt_contract.py",
+        "src/gleipnir/repository.py",
         "src/gleipnir/__init__.py",
         "src/gleipnir/_compat.py",
     ]

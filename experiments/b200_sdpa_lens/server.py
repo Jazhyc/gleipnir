@@ -1,7 +1,8 @@
 """Opt-in eager Lens routes on the ordinary unquantized BF16 monitor."""
 
 import os
-from pathlib import Path
+
+from gleipnir.repository import repo_root
 
 os.environ["VLLM_LENS_DISABLE"] = "1"
 
@@ -14,7 +15,7 @@ if __name__ == "__main__":
     from gleipnir.serving.gigatoken import install_native_encoder
     from gleipnir.serving.lens_api import install_lens_api
 
-    install_compile_identity(Path(__file__).resolve().parents[2])
+    install_compile_identity(repo_root(__file__))
     install_native_encoder()
     install_lens_api()
     main()

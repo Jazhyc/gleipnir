@@ -14,7 +14,9 @@ from pathlib import Path
 
 from experiments.probe_generalization.lasttoken import fit, load, macro
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 LAYERS = (24, 28, 32, 36, 40, 44)
 
 

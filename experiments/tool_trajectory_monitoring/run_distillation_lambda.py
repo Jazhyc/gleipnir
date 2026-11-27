@@ -20,8 +20,9 @@ from experiments.tool_trajectory_monitoring.prepare_distillation_scaling import 
 )
 from gleipnir.qwen35_adapter_rebase import sha256_file
 from gleipnir.qwen35_fast_training import DEFAULT_FLA_TARGET, ensure_fla_kernels
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 
 
 def atomic_write_json(path: Path, value: Any) -> None:

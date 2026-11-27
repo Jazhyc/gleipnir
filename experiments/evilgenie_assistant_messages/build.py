@@ -19,7 +19,9 @@ from typing import Any
 
 from experiments.adversarial_natural_cheats.trajectories import call_text, render
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 CONFIG = json.loads(Path(__file__).with_name("config.json").read_text())
 
 

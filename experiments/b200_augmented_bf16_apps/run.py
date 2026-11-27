@@ -19,8 +19,9 @@ from gleipnir.campaigns.monitoring.evaluation import (
     summarize,
 )
 from gleipnir.data.monitoring import file_hash, read_rows, write_json, write_rows
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 CONFIG = Path(__file__).with_name("config.yaml")
 
 

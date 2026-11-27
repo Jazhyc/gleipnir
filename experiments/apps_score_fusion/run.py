@@ -16,9 +16,10 @@ from gleipnir.evaluation.score_fusion import (
     fit_combiner,
     fit_threshold,
 )
+from gleipnir.repository import repo_root
 from gleipnir.serving.monitor_score import validate_score_response
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 ARMS = ("safety_raw", "safety_calibrated", "two_score", "interaction")
 

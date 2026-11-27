@@ -10,6 +10,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from gleipnir.repository import repo_root
 from gleipnir.serving.benchmark import (
     measurement_summary,
     paired_score_summary,
@@ -17,7 +18,7 @@ from gleipnir.serving.benchmark import (
 )
 from gleipnir.serving.reference import selected_serving_default
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 EXPERIMENT = Path(__file__).parent
 CONCURRENCIES = (1, 2, 4, 8, 16, 32, 64, 128)
 FULL320 = "data/b200_inference_benchmark/full.json"

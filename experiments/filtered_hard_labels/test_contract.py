@@ -6,7 +6,9 @@ import yaml
 
 from experiments.filtered_hard_labels.prepare import CONTROL, arm_config
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 
 
 def test_arm_changes_only_identity_text_and_loss_weights() -> None:

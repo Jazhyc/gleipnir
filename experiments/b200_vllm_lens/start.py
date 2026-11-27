@@ -15,9 +15,10 @@ from pathlib import Path
 
 import httpx
 
+from gleipnir.repository import repo_root
 from gleipnir.serving.reference import selected_serving_default
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 SERVING = ROOT / "results/b200_attention_gdn_serving"
 OVERLAY = Path("/tmp/gleipnir-vllm-lens-1.3.0")
 

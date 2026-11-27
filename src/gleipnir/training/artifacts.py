@@ -6,10 +6,12 @@ import os
 from pathlib import Path
 from typing import Any
 
+from gleipnir.repository import repo_root
+
 
 def systems_scratch(root: Path | None = None) -> Path:
     """Return the shared scratch location, separate from immutable run receipts."""
-    repository = root or Path(__file__).resolve().parents[3]
+    repository = root or repo_root(__file__)
     return repository / "results/systems_training_scratch"
 
 

@@ -24,7 +24,9 @@ import numpy as np
 
 from experiments.probe_generalization.evaluate_ood import report
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 FULL01 = ROOT / "results/probe_generalization/full01"
 BOOTSTRAP = 200
 

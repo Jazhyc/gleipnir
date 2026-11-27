@@ -9,7 +9,6 @@ from typing import Any
 
 from transformers import AutoTokenizer
 
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from experiments.tool_trajectory_monitoring.teacher_canary import (
     DEFAULT_MAX_INPUT_TOKENS,
     DEFAULT_SEED,
@@ -25,6 +24,7 @@ from experiments.tool_trajectory_monitoring.teacher_canary import (
     select_balanced_candidates,
     sha256_file,
 )
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 DEFAULT_SOURCE_DIRECTORY = Path(
     "data/tool_trajectory_monitoring/source/blackboxmonitorsMATS-ccb77e3"

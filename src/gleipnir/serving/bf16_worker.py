@@ -14,6 +14,7 @@ from vllm.model_executor.layers.linear import LinearBase, UnquantizedLinearMetho
 from vllm.v1.worker.gpu_worker import Worker
 
 from gleipnir.data.monitoring import write_json
+from gleipnir.repository import repo_root
 from gleipnir.serving.precision import describe_attention_cache
 
 
@@ -23,7 +24,7 @@ class Bf16Worker(Worker):
     def save(self) -> None:
         write_json(Path(os.environ["GLEIPNIR_BF16_AUDIT"]), self.precision)
         write_json(
-            Path(__file__).resolve().parents[3]
+            repo_root(__file__)
             / "results/b200_attention_gdn_serving/loaded_precision.json",
             self.precision,
         )

@@ -16,8 +16,9 @@ import httpx
 from experiments.b200_vllm031.runtime import candidate_environment
 from gleipnir.data.monitoring import file_hash, write_json
 from gleipnir.evaluation.direction_campaign import info, replacement_command
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 ACTIVE = ROOT / "results/b200_attention_gdn_serving/server.json"
 
 

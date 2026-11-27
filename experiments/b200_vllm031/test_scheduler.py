@@ -11,9 +11,10 @@ import pytest
 import torch
 import yaml
 
+from gleipnir.repository import repo_root
 from gleipnir.serving.monitor_score import classification_overrides
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 BENCHMARK = yaml.safe_load(
     (ROOT / "experiments/b200_inference_benchmark/config.yaml").read_text()
 )

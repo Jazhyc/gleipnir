@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 import torch
 import torch.nn.functional as F
@@ -11,9 +9,10 @@ from experiments.deception_distillation.train_student_sft import (
 )
 from experiments.distillation_temperature.audit import kd_weights
 from gleipnir.campaigns.training_command import training_command
+from gleipnir.repository import repo_root
 from gleipnir.training.validation import validate_training_metadata
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 
 
 def test_unit_temperature_is_bitwise_the_original_bce() -> None:

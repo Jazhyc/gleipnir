@@ -24,7 +24,7 @@ from experiments.sleightbench_eval import benchmark
 from gleipnir.data.monitoring import digest, file_hash, write_json, write_rows
 
 EXPERIMENT = Path(__file__).parent
-ROOT = EXPERIMENT.parents[1]
+ROOT = next(p for p in EXPERIMENT.resolve().parents if (p / "pyproject.toml").is_file())
 SLEIGHT = json.loads((ROOT / "experiments/sleightbench_eval/config.json").read_text())
 SLEIGHT_DATA = ROOT / SLEIGHT["upstream"]["data_root"]
 PROBE_DATA = ROOT / "data/probe_generalization"

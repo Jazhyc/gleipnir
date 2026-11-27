@@ -14,9 +14,10 @@ import torch
 from transformers import TrainerCallback
 
 from gleipnir.packed_benchmark import summarize
+from gleipnir.repository import repo_root
 from gleipnir.validated_startup import validation_reference as bf16_validation_reference
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 REFERENCE = (
     ROOT / "results/b200_mlp_gemm/warmed03/causal_adapter/training_metadata.json"
 )

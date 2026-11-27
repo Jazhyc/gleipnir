@@ -50,7 +50,11 @@ class PrecisionAuditWorker(Worker):
         }
         if seen != expected:
             raise ValueError("incomplete MLP precision coverage")
-        root = Path(__file__).resolve().parents[2]
+        root = next(
+            p
+            for p in Path(__file__).resolve().parents
+            if (p / "pyproject.toml").is_file()
+        )
         path = root / "results/b200_inference_kernels/loaded_precision.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(

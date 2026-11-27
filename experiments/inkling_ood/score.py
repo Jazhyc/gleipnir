@@ -27,7 +27,6 @@ from experiments.tool_trajectory_monitoring.benchmark_gpt_oss_ood import (
     validate_existing,
     validate_inputs,
 )
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from experiments.tool_trajectory_monitoring.qwen_reasoning_core import (
     atomic_write_json,
     atomic_write_jsonl,
@@ -36,6 +35,7 @@ from experiments.tool_trajectory_monitoring.qwen_reasoning_core import (
 )
 from gleipnir.binary_evaluation import binary_token_ids, logprob_value
 from gleipnir.qwen35_adapter_rebase import sha256_file
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 DEFAULT_CONFIG = Path("experiments/inkling_ood/inkling_effort_none.json")
 DEFAULT_OUTPUT = Path("results/inkling_ood/inkling_effort_none")

@@ -20,7 +20,9 @@ import numpy as np
 
 from experiments.probe_generalization.evaluate_ood import family, report
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 NAME = re.compile(r"^(?P<architecture>.+)-(?P<objective>hard|soft)-s(?P<seed>\d+)$")
 
 

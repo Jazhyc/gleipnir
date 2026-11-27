@@ -8,7 +8,9 @@ import re
 import statistics
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 OUT = ROOT / "results/serving_concurrency"
 PATTERN = re.compile(r"(full|quick)_c(\d+)_repeat(\d+)\.json")
 

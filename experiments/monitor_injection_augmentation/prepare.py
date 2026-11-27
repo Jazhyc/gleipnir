@@ -11,7 +11,6 @@ from pathlib import Path
 
 import yaml
 
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from gleipnir.monitoring_campaign_data import (
     digest,
     file_hash,
@@ -21,6 +20,8 @@ from gleipnir.monitoring_campaign_data import (
     write_json,
     write_rows,
 )
+from gleipnir.repository import repo_root
+from gleipnir.teachers.prompt_contract import load_prompt_set
 from gleipnir.transcript_injection import (
     ROLES,
     balanced_choices,
@@ -30,7 +31,7 @@ from gleipnir.transcript_injection import (
     select_stratified,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 CONFIG = HERE / "config.yaml"
 TEMPLATES = HERE / "templates.json"
@@ -175,7 +176,8 @@ def main() -> None:
         "src/gleipnir/__init__.py",
         "src/gleipnir/_compat.py",
         "src/gleipnir/data/monitoring.py",
-        "experiments/tool_trajectory_monitoring/prompting.py",
+        "src/gleipnir/teachers/prompt_contract.py",
+        "src/gleipnir/repository.py",
         "experiments/tool_trajectory_monitoring/prompts/manifest.json",
         "experiments/tool_trajectory_monitoring/prompts/student.txt",
         "experiments/tool_trajectory_monitoring/prompts/teacher.txt",

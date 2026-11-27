@@ -11,8 +11,9 @@ import time
 from pathlib import Path
 
 from gleipnir.adversarial.contract import join_prompt, split_prompt
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 EXP = Path(__file__).resolve().parent
 DATA = ROOT / "data/adversarial_peer_deception_prompt"
 OUT = ROOT / "results/adversarial_peer_deception_prompt"

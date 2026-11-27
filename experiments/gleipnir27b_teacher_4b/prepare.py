@@ -37,8 +37,9 @@ from gleipnir.data.monitoring import (
     write_rows,
 )
 from gleipnir.data.teacher_filter import remove_disagreement
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 OUT = ROOT / "results/gleipnir27b_teacher_4b"
 CONTROL = "teacher-seed-sdpa-s1-01"
@@ -233,8 +234,8 @@ def prepare(gpu_uuid: str) -> dict:
         QWEN_NON_THINKING_ASSISTANT_SUFFIX,
         render_margin_prompt,
     )
-    from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
     from gleipnir.campaigns.monitoring.contract import Campaign
+    from gleipnir.teachers.prompt_contract import load_prompt_set
 
     if not gpu_uuid.startswith("GPU-"):
         raise ValueError("a verified live GPU UUID is required")

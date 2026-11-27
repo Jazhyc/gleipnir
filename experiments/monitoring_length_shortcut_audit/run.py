@@ -24,7 +24,9 @@ from experiments.monitoring_length_shortcut_audit.core import (
     sha256_file,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 
 
 def rooted(path: str) -> Path:

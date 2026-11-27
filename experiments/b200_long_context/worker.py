@@ -9,7 +9,9 @@ import torch
 from experiments.b200_long_context.envelope import enable, validate
 from experiments.b200_monitor_score.worker import MonitorScoreAuditWorker
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 
 
 class LongContextWorker(MonitorScoreAuditWorker):

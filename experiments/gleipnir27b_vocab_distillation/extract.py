@@ -34,7 +34,9 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 OUT = ROOT / "results/gleipnir27b_vocab_distillation"
 MODELS = {
     "gleipnir": "/tmp/gleipnir-merged/qwen38-27b-s0-01",
@@ -80,8 +82,8 @@ def load_rows(prompt: str, split: str) -> tuple[list[dict], dict]:
         raise ValueError(f"frozen input changed: {path}")
     rows = [json.loads(line) for line in path.read_text().splitlines() if line]
     if split == "id_cot_removed":
-        from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
         from gleipnir.data.monitoring import rerender_evaluation
+        from gleipnir.teachers.prompt_contract import load_prompt_set
 
         rows = rerender_evaluation(rows, load_prompt_set().teacher)
     return rows, {"path": str(path.relative_to(ROOT)), "sha256": digest}

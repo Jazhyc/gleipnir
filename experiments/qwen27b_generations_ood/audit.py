@@ -6,14 +6,14 @@ from __future__ import annotations
 
 import hashlib
 import json
-from pathlib import Path
 
 from experiments.tool_trajectory_monitoring.benchmark_qwen_ood import (
     render_margin_prompt,
 )
 from gleipnir.binary_evaluation import binary_token_ids
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 REFERENCE_CONFIG = "experiments/tool_trajectory_monitoring/qwen27b_ood_benchmark.json"
 MODELS = {
     "qwen35_27b": ("Qwen/Qwen3.5-27B", "fc05daec18b0a78c049392ed2e771dde82bdf654"),

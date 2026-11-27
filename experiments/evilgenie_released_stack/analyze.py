@@ -13,7 +13,9 @@ import numpy as np
 
 from experiments.evilgenie_api_baselines import run as api
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 CONFIG = json.loads(Path(__file__).with_name("config.json").read_text())
 OUT = ROOT / CONFIG["results_dir"]
 

@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from gleipnir.repository import experiment_dir
+
 
 def resume_score_environment(
     root: Path, parent: dict, base_environment: dict[str, str]
@@ -37,7 +39,7 @@ def resume_score_environment(
     env["GLEIPNIR_FROST_WRAPPER_VALIDATION"] = parent["host_wrapper"]["validation"]
     env["VLLM_SERVER_DEV_MODE"] = "1"
     selection = json.loads(
-        (root / "experiments/b200_inference_benchmark/baseline.json").read_text()
+        (experiment_dir("b200_inference_benchmark", root) / "baseline.json").read_text()
     )
     env["GLEIPNIR_STRIDE_VALIDATION"] = selection["mutation_validation"]
     for key, value in parent["cache_paths"].items():

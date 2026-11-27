@@ -28,7 +28,9 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 # Backbones: (model id, revision, decoder blocks, hidden size), checked at load.
 MODELS = {
     "qwen35_4b": (

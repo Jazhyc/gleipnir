@@ -22,6 +22,7 @@ from pathlib import Path
 import httpx
 
 from gleipnir.data.monitoring import file_hash, write_json
+from gleipnir.repository import experiment_dir
 
 BF16_WORKER = "gleipnir.serving.bf16_worker.Bf16Worker"
 
@@ -63,7 +64,9 @@ def environment(root: Path, selection: dict, audit: Path) -> dict[str, str]:
 
     binding = {
         "upstream_sha256": file_hash(Path(inspect.getfile(scheduler))),
-        "integration_sha256": file_hash(root / "experiments/b200_vllm031/scheduler.py"),
+        "integration_sha256": file_hash(
+            experiment_dir("b200_vllm031", root) / "scheduler.py"
+        ),
     }
     if binding != selection["scheduler_binding"]:
         raise ValueError("selected pooling scheduler changed")

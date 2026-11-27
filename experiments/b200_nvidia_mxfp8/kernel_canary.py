@@ -21,8 +21,9 @@ from gleipnir.nvidia_mxfp8_attention import (
     mxfp8_attention,
     quantize,
 )
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 
 
 def difference(actual: torch.Tensor, expected: torch.Tensor, limit: float) -> dict:

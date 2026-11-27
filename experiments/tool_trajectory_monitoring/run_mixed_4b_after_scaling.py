@@ -16,7 +16,9 @@ from experiments.tool_trajectory_monitoring.run_distillation_lambda import (
     atomic_write_json,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 DEFAULT_SCALING_STATUS = Path(
     "results/tool_trajectory_distillation_scaling/lambda_status.json"
 )

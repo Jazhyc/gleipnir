@@ -16,8 +16,9 @@ from experiments.b200_nvidia_mxfp8.training_screen import job_for as dense_job
 from gleipnir.monitoring_systems_screen import sha256_file
 from gleipnir.monitoring_training_command import training_command
 from gleipnir.packed_benchmark import summarize
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 
 
 def accept_native(receipt: dict) -> dict:

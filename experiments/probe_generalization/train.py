@@ -14,6 +14,8 @@ import os
 import time
 from pathlib import Path
 
+from gleipnir.repository import repo_root
+
 # Variable-length batches next to a large resident store fragment the CUDA
 # cache; expandable segments avoid near-OOM flush-and-retry allocations.
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
@@ -31,7 +33,7 @@ from gleipnir.probes.training import (  # noqa: E402
     train_epoch,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 ARCHITECTURES = (
     "mean_linear",
     "mean_mlp",

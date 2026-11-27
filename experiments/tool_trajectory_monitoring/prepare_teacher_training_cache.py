@@ -13,12 +13,12 @@ import numpy as np
 import pyarrow.parquet as pq
 from transformers import AutoTokenizer
 
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from experiments.tool_trajectory_monitoring.teacher_canary import (
     atomic_write_json,
     atomic_write_jsonl,
     sha256_file,
 )
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 SOURCE_REPO = "adityaasinha28/deliberative-monitor-pipeline"
 SOURCE_REVISION = "2f10f4e49f4bf349965640ac021406689455d1c3"

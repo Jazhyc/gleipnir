@@ -10,8 +10,9 @@ import yaml
 
 from gleipnir.campaigns.monitoring.contract import Campaign
 from gleipnir.data.monitoring import file_hash, write_json
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 NAME = "fp32-monitor-head01"
 DATA = ROOT / "data" / NAME

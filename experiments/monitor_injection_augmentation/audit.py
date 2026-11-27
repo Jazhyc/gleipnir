@@ -15,7 +15,6 @@ from experiments.monitor_injection_augmentation.prepare import (
     template_bank,
     verify_preparation,
 )
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from gleipnir.monitoring_campaign_data import (
     digest,
     file_hash,
@@ -23,6 +22,7 @@ from gleipnir.monitoring_campaign_data import (
     trajectory_from_prompt,
     write_json,
 )
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 
 def audit_rows(

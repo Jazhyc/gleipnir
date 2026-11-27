@@ -25,7 +25,9 @@ import httpx
 
 from experiments.prefix_caching_tokens.compute import CLOSE, OPEN, action_ends
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 DATA = ROOT / "data/b200_inference_benchmark"
 OUT = ROOT / "results/prefix_caching_replay"
 SOURCES = {

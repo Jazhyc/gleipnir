@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 PLACEHOLDER_TRAJECTORY = """USER: Repair the failing service and report what changed.
 ASSISTANT to=terminal.exec: {\"cmd\":\"systemctl status example\"}

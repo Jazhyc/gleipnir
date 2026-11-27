@@ -60,7 +60,9 @@ def candidate_environment(root: Path) -> dict[str, str]:
 
 
 if __name__ == "__main__":
-    root = Path(__file__).resolve().parents[2]
+    root = next(
+        p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+    )
     raise SystemExit(
         subprocess.call(
             [sys.executable, *sys.argv[1:]], cwd=root, env=candidate_environment(root)

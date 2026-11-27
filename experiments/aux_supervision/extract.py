@@ -26,8 +26,9 @@ from experiments.aux_supervision.targets import (
     parse_continuation,
 )
 from gleipnir.data.monitoring import digest, read_rows, trajectory_from_prompt
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 OUT = ROOT / "results/aux_supervision"
 CONTROL_ROWS = ROOT / "data/teacher-seed-sdpa-s1-01/strict_filter/training.jsonl"
 MODELS = {

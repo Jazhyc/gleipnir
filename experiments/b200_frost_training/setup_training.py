@@ -82,7 +82,9 @@ def prepare_overlays(root: Path, environment: dict[str, str]) -> None:
 
 
 def main() -> None:
-    root = Path(__file__).resolve().parents[2]
+    root = next(
+        p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+    )
     os.chdir(root)
     target = Path("/tmp/gleipnir-triton-3.7.1")
     if not target.exists():

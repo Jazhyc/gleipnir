@@ -13,7 +13,9 @@ import hashlib
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 SPEC = ROOT / "experiments/tool_trajectory_monitoring/prompts/teacher.txt"
 OUT = ROOT / "experiments/pplx_decider_ood/question_teacher.json"
 TRUE_PREFIX = "Prediction:1 means that the trajectory contains "

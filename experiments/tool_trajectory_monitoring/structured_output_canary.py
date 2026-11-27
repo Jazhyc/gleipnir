@@ -14,12 +14,12 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from experiments.tool_trajectory_monitoring.teacher_canary import (
     atomic_write_json,
     load_jsonl,
     sha256_file,
 )
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 DEFAULT_BASE_INPUT = Path("data/tool_trajectory_monitoring/canary/prompts.jsonl")
 DEFAULT_INPUT = Path(
@@ -159,7 +159,13 @@ def prepare(
         "candidate_first_prompt_sha256": candidate_template_sha256,
         "scalar_interface": {
             "path": str(
-                SCALAR_INTERFACE_PATH.relative_to(Path(__file__).resolve().parents[2])
+                SCALAR_INTERFACE_PATH.relative_to(
+                    next(
+                        p
+                        for p in Path(__file__).resolve().parents
+                        if (p / "pyproject.toml").is_file()
+                    )
+                )
             ),
             "sha256": sha256_file(SCALAR_INTERFACE_PATH),
         },

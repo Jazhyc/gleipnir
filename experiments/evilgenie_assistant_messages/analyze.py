@@ -14,8 +14,9 @@ from sklearn.metrics import roc_auc_score
 from experiments.evilgenie_api_baselines import run as api
 from experiments.evilgenie_released_stack.analyze import ood_line
 from gleipnir.evaluation.metrics import normalized_partial_auroc
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 CONFIG = json.loads(Path(__file__).with_name("config.json").read_text())
 OUT = ROOT / CONFIG["results_dir"]
 

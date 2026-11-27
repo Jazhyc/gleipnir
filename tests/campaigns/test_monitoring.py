@@ -15,8 +15,9 @@ from gleipnir.campaigns.monitoring.contract import Campaign
 from gleipnir.campaigns.monitoring.evaluation import agreement, validate_workloads
 from gleipnir.campaigns.monitoring.training import validate_completion
 from gleipnir.data.monitoring import digest, write_json, write_rows
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 EXAMPLE = ROOT / "experiments/monitoring_campaign/config.yaml"
 
 

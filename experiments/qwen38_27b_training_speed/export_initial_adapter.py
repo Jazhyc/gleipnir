@@ -20,9 +20,10 @@ from transformers import AutoModelForCausalLM
 
 from experiments.qwen38_27b_training_speed.prepare import MODEL, REVISION
 from gleipnir.data.monitoring import file_hash
+from gleipnir.repository import repo_root
 from gleipnir.training.execution_audit import tensor_digest
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 BENCHMARK = (
     ROOT / "results/qwen38_27b_training_speed/screen_control01/bf16/packed/screen.json"
 )

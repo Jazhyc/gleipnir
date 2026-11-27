@@ -17,13 +17,13 @@ from experiments.tool_trajectory_monitoring.compare_distilled_ood_parity import 
 from experiments.tool_trajectory_monitoring.prepare_distillation_ood import (
     materialize_rows,
 )
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from experiments.tool_trajectory_monitoring.run_distilled_ood_lambda import (
     parity_report_passed,
 )
 from experiments.tool_trajectory_monitoring.summarize_distilled_ood import (
     summary_rows,
 )
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 
 def write_jsonl(path: Path, rows: list[dict[str, object]]) -> None:

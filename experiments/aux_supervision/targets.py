@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from experiments.tool_trajectory_monitoring.prompting import (
+from gleipnir.teachers.prompt_contract import (
     PromptTemplate,
     load_prompt_set,
 )

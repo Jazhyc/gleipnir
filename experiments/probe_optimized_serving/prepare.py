@@ -8,12 +8,11 @@ activation-level comparison with the optimized capture.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from experiments.probe_generalization.prepare import stratified
 from gleipnir.data.monitoring import file_hash, read_rows, write_json, write_rows
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 SOURCE = ROOT / "data/probe_generalization/full/ood.jsonl"
 OUT = ROOT / "data/probe_generalization/optimized_diag"
 ROWS = 64

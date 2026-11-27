@@ -15,7 +15,9 @@ import traceback
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 EXPERIMENT = Path(__file__).parent
 GEOMETRIES = {(2560, 18432), (18432, 2560), (9216, 2560), (2560, 9216)}
 

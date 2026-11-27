@@ -9,6 +9,8 @@ import tempfile
 import textwrap
 from pathlib import Path
 
+from gleipnir.repository import repo_root
+
 os.environ.setdefault(
     "MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "gleipnir-matplotlib")
 )
@@ -28,7 +30,7 @@ from gleipnir.plotting import (
     set_plot_style,
 )
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+REPOSITORY_ROOT = repo_root(__file__)
 DEFAULT_SOURCE = REPOSITORY_ROOT / "docs/research/tool_trajectory_ood_frontier.md"
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.png"
 DEFAULT_VECTOR_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.svg"

@@ -16,8 +16,9 @@ from gleipnir.evaluation.sources import (
 )
 from gleipnir.monitoring_campaign_data import file_hash, read_rows, write_json
 from gleipnir.monitoring_scoring import completed_predictions
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 CONFIG = HERE / "config.yaml"
 DATA = ROOT / "data/augmented_judge_evaluation"

@@ -14,7 +14,9 @@ matplotlib.rcParams["svg.fonttype"] = "path"  # portable SVG: text as outlines
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 SUMMARY = ROOT / "results/serving_concurrency/summary.json"
 OUTPUT = ROOT / "figures/serving_latency.pdf"
 MODELS = {"4b": ("Gleipnir 4B", "#E45756"), "27b": ("Gleipnir 27B", "#4C78A8")}

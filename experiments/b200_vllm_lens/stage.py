@@ -5,11 +5,12 @@ import json
 import subprocess
 from pathlib import Path
 
+from gleipnir.repository import repo_root
 from gleipnir.serving.runtime import copy_dependency_tree
 
 
 def main() -> None:
-    root = Path(__file__).resolve().parents[2]
+    root = repo_root(__file__)
     requirements = Path(__file__).with_name("requirements.txt")
     source = root / ".cache/interpretability/vllm-lens-1.3.0"
     target = Path("/tmp/gleipnir-vllm-lens-1.3.0")

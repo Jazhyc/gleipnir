@@ -6,7 +6,9 @@ import hashlib
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 TARGET = ROOT / ".cache/kernels/flashqla-da06429"
 HEADER = "tilelang/src/tl_templates/cuda/copy_sm100.h"
 ORIGINAL_SHA256 = "da858d5cf8a7f5f780aced7a914059135d3ef9011dc9198d51d3d52624118f4f"

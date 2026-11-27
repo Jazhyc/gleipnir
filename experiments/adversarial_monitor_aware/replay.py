@@ -42,7 +42,7 @@ from pathlib import Path
 from typing import Any
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
+ROOT = next(p for p in HERE.parents if (p / "pyproject.toml").is_file())
 CONFIG = json.loads((HERE / "config.json").read_text())
 DATA = ROOT / CONFIG["scoring"]["data"]
 TOOL_TIMEOUT = 60

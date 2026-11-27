@@ -25,7 +25,7 @@ from experiments.adversarial_confession_strip.strip import strip_messages, summa
 from experiments.adversarial_natural_cheats.trajectories import render
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
+ROOT = next(p for p in HERE.parents if (p / "pyproject.toml").is_file())
 CONFIG = json.loads((HERE / "config.json").read_text())
 SOURCE = CONFIG["source"]
 SOURCE_DATA = ROOT / SOURCE["data"]

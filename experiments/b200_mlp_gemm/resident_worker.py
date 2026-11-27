@@ -24,6 +24,7 @@ from experiments.b200_mlp_gemm.warmed_training import (
     preserve_random_state,
 )
 from gleipnir.cudnn_fp4_mlp import cache_metadata
+from gleipnir.repository import repo_root
 from gleipnir.systems_artifacts import systems_scratch
 from gleipnir.training_execution_audit import tensor_digest
 
@@ -65,9 +66,7 @@ def candidate_context(trainer: Any, request: dict, trial: Path):
     ).resolve()
     if os.environ.get(
         "GLEIPNIR_FP4_RESIDENT_CANDIDATE"
-    ) and not source_path.is_relative_to(
-        Path(__file__).resolve().parents[2] / "experiments"
-    ):
+    ) and not source_path.is_relative_to(repo_root(__file__) / "experiments"):
         raise ValueError("resident candidate must be experiment-owned")
     source = source_path.read_bytes()
     if hashlib.sha256(source).hexdigest() != request["source_sha256"]:
@@ -76,9 +75,7 @@ def candidate_context(trainer: Any, request: dict, trial: Path):
     module_name = "experiments.b200_mlp_gemm.resident_candidate"
     if os.environ.get("GLEIPNIR_FP4_RESIDENT_CANDIDATE"):
         module_name = ".".join(
-            source_path.with_suffix("")
-            .relative_to(Path(__file__).resolve().parents[2])
-            .parts
+            source_path.with_suffix("").relative_to(repo_root(__file__)).parts
         )
     module = types.ModuleType(module_name)
     module.__file__ = str(source_path)

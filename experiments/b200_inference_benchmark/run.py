@@ -28,8 +28,9 @@ from gleipnir.inference_benchmark import (
     response_score,
 )
 from gleipnir.merged_lora import file_sha256
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 EXPERIMENT = Path(__file__).parent
 DATA = ROOT / "data/b200_inference_benchmark"
 OUTPUT = ROOT / "results/b200_inference_benchmark"

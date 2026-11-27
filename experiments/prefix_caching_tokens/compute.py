@@ -21,7 +21,9 @@ import statistics
 from collections import defaultdict
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 OOD = ROOT / "data/tool_trajectory_monitoring/teacher_ood_benchmark/prompts.jsonl"
 SESSION = ROOT / "data/b200_prefix_replay/session.json"
 OUTPUT = ROOT / "results/prefix_caching_tokens/summary.json"

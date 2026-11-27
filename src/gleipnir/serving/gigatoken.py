@@ -11,6 +11,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+from gleipnir.repository import experiment_dir
+
 VERSION = "0.10.0"
 ENTRYPOINT = "experiments.b200_inference_benchmark.frontend_server"
 
@@ -149,7 +151,7 @@ def configure_frontend(
         "source_sha256": sha(source),
         "package_files": receipt["package_files"],
         "entrypoint_sha256": sha(
-            root / "experiments/b200_inference_benchmark/frontend_server.py"
+            experiment_dir("b200_inference_benchmark", root) / "frontend_server.py"
         ),
         "gpu_registry_module": "experiments.b200_attention_gdn_serving.server",
     }

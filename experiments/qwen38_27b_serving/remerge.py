@@ -15,8 +15,9 @@ from pathlib import Path
 
 from gleipnir.adapters.merge import merge_checkpoint
 from gleipnir.data.monitoring import write_json
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 CAMPAIGN = ROOT / "results/qwen38-27b-s0-01"
 
 

@@ -2,13 +2,13 @@
 
 import pytest
 
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from gleipnir.evaluation.injection_presence import (
     diagnostics,
     injection_label,
     paired_bootstrap,
     trajectory,
 )
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 
 @pytest.mark.parametrize("behavior", [0, 1])

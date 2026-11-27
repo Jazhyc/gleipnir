@@ -13,8 +13,9 @@ import yaml
 
 from gleipnir.monitoring_systems_screen import sha256_file
 from gleipnir.packed_benchmark import benchmark_environment
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 
 
 def environment(config: dict) -> dict[str, str]:

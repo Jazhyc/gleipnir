@@ -7,7 +7,7 @@ Use canonical package paths for new code; moved implementations have one home.
 | Package | Responsibilities | Starting points |
 | --- | --- | --- |
 | `training/` | Objectives, packing, branch execution, backend integrations, startup validation and training screens | [optimizers.py](training/optimizers.py), [packing.py](training/packing.py), [backends/](training/backends/), [startup.py](training/startup.py), [screens/](training/screens/), [branch_trainer.py](training/branch_trainer.py) |
-| `teachers/` | Teacher API requests, prompt construction and output parsing, resumable annotation and cache validation | [openai.py](teachers/openai.py), [openrouter_cli.py](teachers/openrouter_cli.py), [prompts.py](teachers/prompts.py), [prefix_cache.py](teachers/prefix_cache.py), [prefix_audit.py](teachers/prefix_audit.py) |
+| `teachers/` | Teacher API requests, the versioned prompt contract, prompt construction and output parsing, resumable annotation and cache validation | [openai.py](teachers/openai.py), [openrouter_cli.py](teachers/openrouter_cli.py), [prompt_contract.py](teachers/prompt_contract.py), [prompts.py](teachers/prompts.py), [prefix_cache.py](teachers/prefix_cache.py), [prefix_audit.py](teachers/prefix_audit.py) |
 | `analysis/` | Shared plotting conventions, Pareto frontiers and empirical scaling fits | [plotting.py](analysis/plotting.py), [scaling.py](analysis/scaling.py) |
 | `adapters/` | Adapter artifact transformations with tensor and checksum preservation | [rebase.py](adapters/rebase.py), [merge.py](adapters/merge.py) |
 | `serving/` | Runtime and compiler identity, CPU frontend, precision audits, engine integration and bundle restoration | [runtime.py](serving/runtime.py), [compile_cache.py](serving/compile_cache.py), [gigatoken.py](serving/gigatoken.py), [vllm/](serving/vllm/), [fp4/](serving/fp4/), [gdn/](serving/gdn/) |
@@ -38,7 +38,9 @@ recipes. Serving integrations live under `serving/`; shared arithmetic lives
 under `kernels/`. FP4 compiler, memory and performance diagnostics live under
 `training/fp4/`. GPU dependencies stay optional until an implementation is imported.
 
-The package root contains only initialization and alias registration. Backend
+The package root contains only initialization, alias registration and
+[repository.py](repository.py), which locates the checkout and experiment
+directories. Backend
 integrations live in `training/backends/`; packing, BF16 LoRA, hotpath and startup
 helpers live directly under `training/`. Reusable timing and correctness screens
 live in `training/screens/`.

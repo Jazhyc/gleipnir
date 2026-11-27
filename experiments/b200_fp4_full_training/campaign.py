@@ -14,7 +14,6 @@ from omegaconf import OmegaConf
 
 from experiments.monitoring_hard_labels.prepare import validate_holdout
 from experiments.tool_trajectory_monitoring.benchmark_gpt_oss_ood import summarize
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from gleipnir.monitoring_campaign_data import (
     digest,
     file_hash,
@@ -23,9 +22,11 @@ from gleipnir.monitoring_campaign_data import (
     write_json,
 )
 from gleipnir.native_fp4_training import REFERENCE_SHA256
+from gleipnir.repository import repo_root
+from gleipnir.teachers.prompt_contract import load_prompt_set
 from gleipnir.validated_startup import validation_reference
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 DATA = ROOT / "data/b200_fp4_full_training"
 OUTPUT = ROOT / "results/b200_fp4_full_training"
 DIRECTORY = OUTPUT / "4b/fp4"

@@ -9,8 +9,9 @@ import yaml
 from gleipnir.monitoring_campaign_runtime import training_environment
 from gleipnir.monitoring_systems_screen import sha256_file
 from gleipnir.monitoring_training_command import training_command
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 
 
 def main() -> None:

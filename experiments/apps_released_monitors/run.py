@@ -19,9 +19,10 @@ from typing import Any
 
 from gleipnir.data.monitoring import file_hash, read_rows, write_json, write_rows
 from gleipnir.evaluation.http_score import score_batch
+from gleipnir.repository import repo_root
 
 EXPERIMENT = Path(__file__).resolve().parent
-ROOT = EXPERIMENT.parents[1]
+ROOT = repo_root(EXPERIMENT)
 CONFIG = json.loads((EXPERIMENT / "config.json").read_text())
 DATA = ROOT / "data/apps_released_monitors"
 RESULTS = ROOT / "results/apps_released_monitors"
@@ -74,7 +75,7 @@ def check_framing(model: str, prompt: str) -> None:
 def build() -> tuple[dict, dict[str, dict[str, list[dict]]]]:
     from transformers import AutoTokenizer
 
-    from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
+    from gleipnir.teachers.prompt_contract import load_prompt_set
 
     prompt_set = load_prompt_set()
     student = prompt_set.for_role("student")

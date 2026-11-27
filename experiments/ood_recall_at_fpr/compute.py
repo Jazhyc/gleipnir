@@ -19,9 +19,10 @@ from sklearn.metrics import roc_auc_score
 
 from gleipnir.adversarial.metrics import recall_at_fpr
 from gleipnir.evaluation.metrics import normalized_partial_auroc
+from gleipnir.repository import repo_root
 
 EXPERIMENT = Path(__file__).resolve().parent
-REPOSITORY_ROOT = EXPERIMENT.parents[1]
+REPOSITORY_ROOT = repo_root(EXPERIMENT)
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "results/ood_recall_at_fpr/recall_at_fpr.json"
 LABEL_FIELDS = ("label", "ground_truth", "metadata.ground_truth")
 

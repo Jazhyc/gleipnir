@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import yaml
 
 from experiments.qwen38_teacher_4b.prepare import (
@@ -10,8 +8,9 @@ from experiments.qwen38_teacher_4b.prepare import (
     qwen_targets,
 )
 from gleipnir.data.monitoring import read_rows, validate_targets
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 
 
 def test_arm_changes_only_identity_text_and_teacher_pool() -> None:

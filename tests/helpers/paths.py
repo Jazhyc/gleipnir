@@ -1,5 +1,5 @@
 """Repository paths independent of a test module's directory."""
 
-from pathlib import Path
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)

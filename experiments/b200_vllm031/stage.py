@@ -4,12 +4,13 @@ import hashlib
 import json
 from pathlib import Path
 
+from gleipnir.repository import repo_root
 from gleipnir.serving.runtime import copy_dependency_tree
 from gleipnir.serving.tokenizer_setup import prepare_native_tokenizer
 
 
 def main() -> None:
-    root = Path(__file__).resolve().parents[2]
+    root = repo_root(__file__)
     source = root / ".venv-vllm031"
     target = Path("/tmp/gleipnir-vllm031-runtime")
     packages = source / "lib/python3.12/site-packages"

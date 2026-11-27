@@ -9,8 +9,9 @@ from pathlib import Path
 from experiments.b200_mxfp8_fused.training_screen import accept_native
 from gleipnir.monitoring_systems_screen import sha256_file
 from gleipnir.nvidia_mxfp8_meta_training import validate_options
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 
 
 def bound_receipt(config: dict, name: str) -> dict:

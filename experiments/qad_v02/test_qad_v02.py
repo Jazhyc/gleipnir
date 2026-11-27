@@ -4,7 +4,9 @@ import pytest
 
 from experiments.qad_v02.generate import generate, transform
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 VARIANT = {
     "config_path": "experiments/qad_v02/config.yaml",
     "runtime_module": "experiments.qad_v02.runtime",

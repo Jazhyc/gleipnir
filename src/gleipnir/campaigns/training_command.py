@@ -3,16 +3,22 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from typing import Any
 
+from gleipnir.repository import experiment_dir, repo_root
+
 
 def training_command(job: dict[str, Any]) -> list[str]:
+    root = repo_root(__file__)
+    trainer = experiment_dir("deception_distillation", root)
+    configs = experiment_dir("tool_trajectory_monitoring", root)
     command = [
         sys.executable,
-        "experiments/deception_distillation/train_student_sft.py",
+        str((trainer / "train_student_sft.py").relative_to(root)),
         "--config-path",
-        "../tool_trajectory_monitoring",
+        os.path.relpath(configs, trainer),
         "--config-name",
         "distillation_config",
         f"method={job['job_name']}",

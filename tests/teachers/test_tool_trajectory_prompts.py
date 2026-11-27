@@ -5,11 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from experiments.tool_trajectory_monitoring.prompting import (
+from gleipnir.openrouter import OpenRouterConfig, PromptRecord, request_payload
+from gleipnir.teachers.prompt_contract import (
     PromptTemplate,
     load_prompt_set,
 )
-from gleipnir.openrouter import OpenRouterConfig, PromptRecord, request_payload
 from tests.helpers.paths import ROOT
 
 EXPERIMENT_DIRECTORY = ROOT / "experiments" / "tool_trajectory_monitoring"

@@ -11,13 +11,12 @@ prompted row's token key to it for the probe pooler.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from experiments.probe_generalization.extract import MODELS, render, tokenize
 from experiments.probe_optimized_serving.keys import token_key
 from gleipnir.data.monitoring import read_rows, write_json, write_rows
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 SOURCES = {
     "id": ROOT / "data/probe_generalization/full/id.jsonl",
     "ood": ROOT / "data/probe_generalization/full/ood.jsonl",

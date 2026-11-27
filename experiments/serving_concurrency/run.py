@@ -9,7 +9,9 @@ import re
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 HERE = Path(__file__).resolve().parent
 OUT = ROOT / "results/serving_concurrency"
 LOGS = ROOT / "logs/runpod/serving_concurrency"

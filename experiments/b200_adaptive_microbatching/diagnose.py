@@ -20,8 +20,9 @@ from gleipnir.qwen35_fast_training import (
     fla_environment,
     triton_environment,
 )
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 
 
 def diagnostic_job(original: dict, output: Path, mode: str) -> dict:

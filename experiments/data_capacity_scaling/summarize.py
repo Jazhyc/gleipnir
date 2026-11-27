@@ -13,7 +13,9 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 

@@ -15,8 +15,9 @@ from experiments.b200_nvidia_mxfp8.run import environment
 from gleipnir.monitoring_systems_screen import sha256_file
 from gleipnir.monitoring_training_command import training_command
 from gleipnir.packed_benchmark import summarize
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 REFERENCE = Path(
     "results/b200_bf16_fa4_accepted/flash_attention_4/causal_adapter/training_metadata.json"
 )

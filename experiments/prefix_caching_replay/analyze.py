@@ -10,7 +10,9 @@ import json
 import statistics
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 OUT = ROOT / "results/prefix_caching_replay"
 RATES = {"on_demand": 7.99, "committed": 3.44}
 

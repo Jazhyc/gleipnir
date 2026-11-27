@@ -23,6 +23,7 @@ from vllm.model_executor.layers.linear import LinearBase
 from vllm.model_executor.layers.quantization import register_quantization_config
 
 from gleipnir.data.monitoring import file_hash
+from gleipnir.repository import repo_root
 from gleipnir.serving.bf16_stack import FastGdnMixin, LastQueryMixin
 from gleipnir.serving.bf16_worker import Bf16Worker
 from gleipnir.serving.fp4.attention import projection_identity
@@ -31,7 +32,7 @@ from gleipnir.serving.vllm.attention_precision import AttentionFp8Method, fp8_li
 from gleipnir.serving.vllm.frost_gdn_fp4 import CheckedGdnFp4Method, FrostGdnFp4Config
 
 NAME = "gleipnir_geometry_fp8_fp4"
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = repo_root(__file__)
 
 
 def attention_weight_shape(text: Any, layer: int, projection: str) -> tuple[int, int]:

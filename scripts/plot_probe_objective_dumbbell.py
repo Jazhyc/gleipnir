@@ -14,8 +14,9 @@ from matplotlib.patches import FancyBboxPatch
 from matplotlib.transforms import blended_transform_factory, offset_copy
 
 from gleipnir.analysis.plotting import save_figure, set_plot_style
+from gleipnir.repository import repo_root
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+REPOSITORY_ROOT = repo_root(__file__)
 DEFAULT_RESULTS = REPOSITORY_ROOT / "results/probe_generalization/full01"
 DEFAULT_OUTPUTS = [
     REPOSITORY_ROOT / "figures/probe_objective_ood_dumbbell.png",

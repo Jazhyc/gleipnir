@@ -8,10 +8,6 @@ from pathlib import Path
 
 import yaml
 
-from experiments.tool_trajectory_monitoring.prompting import (
-    PromptTemplate,
-    load_prompt_set,
-)
 from gleipnir.monitoring_campaign_data import digest as digest
 from gleipnir.monitoring_campaign_data import (
     file_hash,
@@ -25,8 +21,13 @@ from gleipnir.monitoring_campaign_data import (
 from gleipnir.monitoring_campaign_data import (
     trajectory_from_prompt as trajectory_from_prompt,
 )
+from gleipnir.repository import repo_root
+from gleipnir.teachers.prompt_contract import (
+    PromptTemplate,
+    load_prompt_set,
+)
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 DATA = ROOT / "data/student_injection_awareness"
 OUTPUT = ROOT / "results/student_injection_awareness"
 CONFIG = Path(__file__).with_name("config.yaml")

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -21,8 +20,9 @@ from gleipnir.adversarial.frontier import (
     score_instruction,
     score_prompt,
 )
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 TEACHER = (
     ROOT / "experiments/tool_trajectory_monitoring/prompts/teacher.txt"
 ).read_text()

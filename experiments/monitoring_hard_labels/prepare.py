@@ -9,7 +9,6 @@ import yaml
 from hydra import compose, initialize_config_dir
 from omegaconf import OmegaConf
 
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from gleipnir.monitoring_campaign_data import (
     digest,
     file_hash,
@@ -20,8 +19,10 @@ from gleipnir.monitoring_campaign_data import (
     write_json,
     write_rows,
 )
+from gleipnir.repository import repo_root
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 CONFIG = Path(__file__).with_name("config.yaml")
 DATA = ROOT / "data/monitoring_hard_labels"
 OUTPUT = ROOT / "results/monitoring_hard_labels"

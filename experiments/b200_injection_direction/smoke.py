@@ -7,9 +7,10 @@ import numpy as np
 import torch
 
 from gleipnir.data.monitoring import write_json
+from gleipnir.repository import repo_root
 from gleipnir.serving.lens import MonitorLensClient
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 
 
 def main(output_path: Path | None = None):

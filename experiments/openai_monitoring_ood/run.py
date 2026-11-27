@@ -14,13 +14,13 @@ from typing import Any
 import numpy as np
 from dotenv import dotenv_values
 
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from experiments.tool_trajectory_monitoring.teacher_canary import (
     atomic_write_json,
     load_jsonl,
     summarize_scored_rows,
 )
 from gleipnir.teachers.openai import DEFAULT_PRICING, AuditedClient, digest
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 
 def file_hash(path: Path) -> str:

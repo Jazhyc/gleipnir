@@ -18,8 +18,9 @@ from gleipnir.data.monitoring import (
     write_rows,
 )
 from gleipnir.data.teacher_filter import remove_disagreement
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 CONTROL = "teacher-seed-sdpa-s1-01"
 SELECTION = "experiments/b200_inference_benchmark/serving_default.json"

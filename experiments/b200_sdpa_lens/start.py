@@ -17,8 +17,9 @@ from pathlib import Path
 import httpx
 
 from gleipnir.data.monitoring import file_hash, read_rows, write_json
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 CONFIG = Path(__file__).with_name("config.json")
 SERVING = ROOT / "results/b200_attention_gdn_serving"
 OVERLAY = Path("/tmp/gleipnir-vllm-lens-1.3.0")

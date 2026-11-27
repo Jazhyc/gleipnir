@@ -14,9 +14,10 @@ import httpx
 from gleipnir.data.monitoring import file_hash, read_rows, write_json, write_rows
 from gleipnir.evaluation.apps import summarize_apps
 from gleipnir.evaluation.scoring import rendered
+from gleipnir.repository import repo_root
 from gleipnir.serving.monitor_score import ENDPOINT, validate_score_response
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 CONFIG = Path(__file__).with_name("config.json")
 SERVING = ROOT / "results/b200_attention_gdn_serving"
 

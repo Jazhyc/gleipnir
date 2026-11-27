@@ -11,6 +11,7 @@ from sklearn.metrics import roc_auc_score
 
 from gleipnir.data.monitoring import read_rows, write_json
 from gleipnir.evaluation.preferences import summarize_preferences
+from gleipnir.repository import repo_root
 
 
 def shift(values: list[float]) -> dict:
@@ -161,7 +162,7 @@ def analyze(out: Path) -> None:
     }
     result["previous_score_reproduction"] = {}
     config = json.loads((out / "config.json").read_text())
-    root = Path(__file__).resolve().parents[2]
+    root = repo_root(__file__)
     for arm, rs in [("plain", plain), ("project", project)]:
         old = read_rows(root / config["inputs"]["judge_" + arm]["path"])
         if [(r["id"], r["prompt_sha256"]) for r in rs] != [

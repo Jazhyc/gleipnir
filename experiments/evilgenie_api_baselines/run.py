@@ -19,8 +19,9 @@ from dotenv import dotenv_values
 from sklearn.metrics import roc_auc_score
 
 from gleipnir.evaluation.metrics import normalized_partial_auroc
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 CONFIG = json.loads(Path(__file__).with_name("config.json").read_text())
 DATA = ROOT / CONFIG["data"]
 OUT = ROOT / CONFIG["output"]

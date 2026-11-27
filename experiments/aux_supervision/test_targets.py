@@ -4,7 +4,7 @@ from experiments.aux_supervision.targets import (
     grounding,
     parse_continuation,
 )
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 
 def test_aux_template_replaces_only_the_output_interface() -> None:

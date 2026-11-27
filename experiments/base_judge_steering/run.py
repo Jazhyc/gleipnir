@@ -23,8 +23,9 @@ from experiments.caft_honest_steering.metrics import report as honest_report
 from gleipnir.data.monitoring import file_hash, read_rows, write_json, write_rows
 from gleipnir.evaluation.direction_campaign import info
 from gleipnir.evaluation.http_score import score_batch
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 
 

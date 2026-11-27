@@ -19,8 +19,9 @@ from gleipnir.data.monitoring import (
     write_json,
 )
 from gleipnir.data.teacher_filter import remove_disagreement
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 OUTPUT = ROOT / "results/teacher_disagreement_filtering/sweep04"
 CASES = {

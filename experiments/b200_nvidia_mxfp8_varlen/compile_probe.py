@@ -2,17 +2,16 @@
 
 import hashlib
 import json
-from pathlib import Path
 
 from gleipnir.nvidia_mxfp8_attention import UPSTREAM_REVISION, _cudnn
 from gleipnir.nvidia_mxfp8_varlen_host import compile_packed_backward
+from gleipnir.repository import repo_root
 
 
 def main():
     _cudnn()
     source = (
-        Path(__file__).resolve().parents[2]
-        / "src/gleipnir/kernels/mxfp8/nvidia_mxfp8_varlen_host.py"
+        repo_root(__file__) / "src/gleipnir/kernels/mxfp8/nvidia_mxfp8_varlen_host.py"
     )
     digest = hashlib.sha256(source.read_bytes()).hexdigest()
     print(json.dumps({"status": "compiling", "source_sha256": digest}), flush=True)

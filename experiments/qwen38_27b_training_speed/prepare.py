@@ -13,7 +13,9 @@ import itertools
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 SOURCE = ROOT / "results/b200_adaptive_microbatching"
 OUTPUT = ROOT / "results/qwen38_27b_training_speed"
 REMOTE = Path("/workspace/gleipnir/results/qwen38_27b_training_speed")

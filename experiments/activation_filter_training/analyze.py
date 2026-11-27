@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from gleipnir.data.monitoring import file_hash, read_rows, write_json
 from gleipnir.evaluation.apps import summarize_apps
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 PARTITION = (
     ROOT / "results/b200_injection_direction/sdpa_injection_direction01/partition.json"
 )

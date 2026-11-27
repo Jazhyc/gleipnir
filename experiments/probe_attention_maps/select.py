@@ -26,7 +26,9 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 SOURCE = ROOT / "results/probe_generalization/full01"
 DATA = ROOT / "data/probe_generalization/full"
 EPOCH = 8

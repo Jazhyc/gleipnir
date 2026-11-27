@@ -2,7 +2,6 @@
 
 import json
 from dataclasses import replace
-from pathlib import Path
 
 import pytest
 import yaml
@@ -10,10 +9,9 @@ import yaml
 from gleipnir.campaigns.monitoring.contract import Campaign
 from gleipnir.campaigns.monitoring.filtering import resolve_filter, retained_indices
 from gleipnir.data.monitoring import file_hash, read_rows, write_rows
+from gleipnir.repository import repo_root
 
-EXAMPLE = (
-    Path(__file__).resolve().parents[2] / "experiments/monitoring_campaign/config.yaml"
-)
+EXAMPLE = repo_root(__file__) / "experiments/monitoring_campaign/config.yaml"
 
 
 @pytest.fixture

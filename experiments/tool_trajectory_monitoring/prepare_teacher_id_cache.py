@@ -21,7 +21,6 @@ from experiments.tool_trajectory_monitoring.prepare_teacher_training_cache impor
     add_token_lengths,
     length_summary,
 )
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from experiments.tool_trajectory_monitoring.qwen_reasoning_core import (
     atomic_write_json,
     atomic_write_jsonl,
@@ -29,6 +28,7 @@ from experiments.tool_trajectory_monitoring.qwen_reasoning_core import (
     load_jsonl,
 )
 from gleipnir.qwen35_adapter_rebase import sha256_file
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 INPUT_SHA256 = "6625ddba6a266866115db64c844c32a07ab4fcb6cd236322ebc6e17343c58cb4"
 INPUT_MANIFEST_SHA256 = (

@@ -10,8 +10,9 @@ from pathlib import Path
 import yaml
 
 from gleipnir.data.monitoring import file_hash, write_json
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 CONTROL = "teacher-seed-sdpa-s1-01"
 SELECTION = "experiments/b200_inference_benchmark/serving_default.json"

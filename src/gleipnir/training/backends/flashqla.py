@@ -9,6 +9,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from gleipnir.repository import experiment_dir
+
 FLASHQLA_REVISION = "da06429d54b0f577de0a638f451ac8f0b395e0ac"
 FLASHQLA_TARGET = Path(".cache/kernels/flashqla-da06429")
 BOUNDARY_POLICIES = {"bf16", "bf16_fp32_gates_norm", "fp16_fp32_gates_norm"}
@@ -130,7 +132,7 @@ def load_flashqla() -> tuple[Callable, dict[str, Any]]:
             != patch["after_sha256"]
         ):
             raise ValueError("TileLang compiler patch drift")
-        script = Path("experiments/fp4_stability/patch_tilelang_fp16.py")
+        script = experiment_dir("fp4_stability") / "patch_tilelang_fp16.py"
         if hashlib.sha256(script.read_bytes()).hexdigest() != patch["script_sha256"]:
             raise ValueError("TileLang compiler patch script drift")
     software = {

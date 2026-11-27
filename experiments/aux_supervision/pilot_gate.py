@@ -6,13 +6,13 @@ import argparse
 import json
 import random
 from collections import Counter
-from pathlib import Path
 
 from experiments.aux_supervision.extract import load
 from experiments.aux_supervision.targets import grounding, parse_continuation
 from gleipnir.data.monitoring import read_rows, write_json
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 OUT = ROOT / "results/aux_supervision"
 
 

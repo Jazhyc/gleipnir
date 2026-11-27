@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from experiments.tool_trajectory_monitoring.prompting import (
+from gleipnir.teachers.prompt_contract import (
     PromptTemplate,
     load_prompt_set,
 )

@@ -18,9 +18,10 @@ import numpy as np
 
 from gleipnir.data.monitoring import file_hash, read_rows, write_json
 from gleipnir.evaluation.lens_capture import capture_rows
+from gleipnir.repository import experiment_dir, repo_root
 
-ROOT = Path(__file__).resolve().parents[3]
-HERE = ROOT / "experiments/b200_training_direction"
+ROOT = repo_root(__file__)
+HERE = experiment_dir("b200_training_direction", ROOT)
 CONFIG = HERE / "config.json"
 ACTIVE = ROOT / "results/b200_attention_gdn_serving/server.json"
 
@@ -118,7 +119,7 @@ async def replace(c: dict, out: Path, parent: dict, name: str, model: str) -> di
             {
                 "upstream_sha256": file_hash(Path(inspect.getfile(scheduler))),
                 "integration_sha256": file_hash(
-                    ROOT / "experiments/b200_vllm031/scheduler.py"
+                    experiment_dir("b200_vllm031", ROOT) / "scheduler.py"
                 ),
             }
         ),

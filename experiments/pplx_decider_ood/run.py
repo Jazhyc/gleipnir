@@ -14,7 +14,9 @@ import os
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 CONFIG = ROOT / "experiments/pplx_decider_ood/config.json"
 OUT = ROOT / "results/pplx_decider_ood"
 

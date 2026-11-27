@@ -20,6 +20,8 @@ import os
 import tempfile
 from pathlib import Path
 
+from gleipnir.repository import repo_root
+
 os.environ.setdefault(
     "MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "gleipnir-matplotlib")
 )
@@ -29,7 +31,7 @@ from matplotlib.lines import Line2D
 
 from gleipnir.plotting import save_figure, set_plot_style
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = repo_root(__file__)
 RESULTS = ROOT / "results/probe_generalization"
 ASSETS = ROOT / "outputs/reports/gleipnir_v1_technical_report/assets"
 MODELS = {

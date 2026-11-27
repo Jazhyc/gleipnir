@@ -14,8 +14,8 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 
-from experiments.tool_trajectory_monitoring.prompting import PromptTemplate
 from gleipnir.binary_evaluation import metric_views
+from gleipnir.teachers.prompt_contract import PromptTemplate
 
 PREDICTION_RE = re.compile(r"(?im)\bPrediction\s*:\s*<?([01])>?")
 

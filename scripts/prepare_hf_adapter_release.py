@@ -17,8 +17,10 @@ from safetensors import safe_open
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+if str(ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(ROOT / "src"))
 
-from experiments.tool_trajectory_monitoring.prompting import (  # noqa: E402
+from gleipnir.teachers.prompt_contract import (  # noqa: E402
     load_prompt_set,
 )
 

@@ -7,8 +7,9 @@ from experiments.activation_filter_training.analyze import heldout_apps
 from gleipnir.campaigns.monitoring.__main__ import execute
 from gleipnir.campaigns.monitoring.contract import Campaign
 from gleipnir.data.monitoring import read_rows, write_json
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 
 

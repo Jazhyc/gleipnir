@@ -9,7 +9,9 @@ import torch
 from experiments.b200_attention_precision.worker import AttentionPrecisionWorker
 from experiments.b200_context_million.envelope import CHUNK, enable, validate
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 
 
 class LongContextWorker(AttentionPrecisionWorker):

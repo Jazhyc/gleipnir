@@ -33,7 +33,7 @@ from gleipnir.probes.store import Store
 from gleipnir.probes.training import make_sweep, score
 
 EXPERIMENT = Path(__file__).parent
-ROOT = EXPERIMENT.parents[1]
+ROOT = next(p for p in EXPERIMENT.resolve().parents if (p / "pyproject.toml").is_file())
 PROBES = ROOT / "results/probe_generalization/full01"
 RESULTS = ROOT / "results/probe_sleightbench"
 VIEW = "stripped"

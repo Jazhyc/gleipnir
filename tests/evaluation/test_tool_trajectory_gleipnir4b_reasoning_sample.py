@@ -6,8 +6,8 @@ from pathlib import Path
 from experiments.tool_trajectory_monitoring import (
     generate_gleipnir4b_reasoning_sample as sample,
 )
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from experiments.tool_trajectory_monitoring.qwen_reasoning_core import load_json
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 
 def records() -> list[dict]:

@@ -19,9 +19,7 @@ import hashlib
 import json
 import random
 from collections import defaultdict
-from pathlib import Path
 
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from gleipnir.data.monitoring import (
     digest,
     file_hash,
@@ -31,8 +29,10 @@ from gleipnir.data.monitoring import (
     write_json,
     write_rows,
 )
+from gleipnir.repository import repo_root
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 OUT = ROOT / "data/probe_generalization"
 INPUTS = {
     "train_prompts": (

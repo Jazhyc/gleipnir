@@ -19,8 +19,9 @@ from gleipnir.data.monitoring import (
     write_rows,
 )
 from gleipnir.evaluation.scoring import rendered
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 NAME = "teacher-disagreement-strict-ood01"
 DATA = ROOT / "data" / NAME

@@ -22,7 +22,7 @@ from experiments.tool_trajectory_monitoring.prepare_teacher_ood_cache import (
     SOURCE_DIRECTORY,
     load_source_rows,
 )
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 HEADERS = re.compile(
     r"^(?:\[(USER|SYSTEM|ASSISTANT|TOOL|TOOL CALLS)\][ \t]*\n"

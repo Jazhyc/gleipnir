@@ -2,13 +2,13 @@
 
 import os
 import runpy
-from pathlib import Path
 
 import experiments.b200_monitor_score.server  # noqa: F401
+from gleipnir.repository import repo_root
 from gleipnir.serving.triton_mutation import install
 
 install(
-    Path(__file__).resolve().parents[2],
+    repo_root(__file__),
     validation=os.environ["GLEIPNIR_STRIDE_VALIDATION"],
 )
 
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     from gleipnir.serving_compile_cache import install_compile_identity
     from gleipnir.serving_gigatoken import install_native_encoder
 
-    install_compile_identity(Path(__file__).resolve().parents[2])
+    install_compile_identity(repo_root(__file__))
     install_native_encoder()
     install_score_api()
     runpy.run_module("vllm.entrypoints.openai.api_server", run_name="__main__")

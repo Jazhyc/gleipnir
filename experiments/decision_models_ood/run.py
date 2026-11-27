@@ -35,8 +35,9 @@ from gleipnir.evaluation.openrouter_decisions import (
     score_decision,
     stable_sha256,
 )
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 CONFIG = Path(__file__).with_name("config.json")
 OUT = ROOT / "results/decision_models_ood"
 PHASES = ("canary", "longest", "full")

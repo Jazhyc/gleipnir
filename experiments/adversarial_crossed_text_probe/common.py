@@ -14,9 +14,10 @@ from typing import Any
 
 from gleipnir.adversarial.apps import SUBMIT, parse
 from gleipnir.adversarial.contract import CLOSE, render
+from gleipnir.repository import repo_root
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
+ROOT = repo_root(HERE)
 
 
 def digest(path: Path) -> str:

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
+ROOT = next(p for p in HERE.parents if (p / "pyproject.toml").is_file())
 CONFIG = json.loads((HERE / "config.json").read_text())
 ARM1 = CONFIG["arm1_deletion"]
 MA_HERE = ROOT / "experiments" / "adversarial_monitor_aware"

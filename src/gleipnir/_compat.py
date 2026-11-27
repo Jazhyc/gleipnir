@@ -203,6 +203,9 @@ MODULE_ALIASES = {
     "gleipnir.precision_training_screen": "gleipnir.training.screens.precision",
     "gleipnir.monitoring_campaign_runtime": "gleipnir.campaigns.runtime",
     "gleipnir.monitoring_campaign_evaluation": "gleipnir.evaluation.campaign",
+    "experiments.tool_trajectory_monitoring.prompting": (
+        "gleipnir.teachers.prompt_contract"
+    ),
 }
 
 _CLI_MODULES = {
@@ -220,9 +223,14 @@ def canonical_source_reference(reference: str) -> str:
     files or checking an old artifact's checksum. Unmoved references are exact.
     """
     for legacy, canonical in MODULE_ALIASES.items():
-        if reference == "src/" + legacy.replace(".", "/") + ".py":
-            return "src/" + canonical.replace(".", "/") + ".py"
+        if reference == _module_source(legacy):
+            return _module_source(canonical)
     return reference
+
+
+def _module_source(module: str) -> str:
+    relative = module.replace(".", "/") + ".py"
+    return "src/" + relative if module.startswith("gleipnir.") else relative
 
 
 def _source_path(target: str) -> str:

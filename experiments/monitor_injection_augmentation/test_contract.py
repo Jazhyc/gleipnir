@@ -7,8 +7,8 @@ import pytest
 
 from experiments.monitor_injection_augmentation.audit import audit_rows
 from experiments.monitor_injection_augmentation.prepare import augment, template_bank
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from gleipnir.monitoring_campaign_data import digest, trajectory_from_prompt
+from gleipnir.teachers.prompt_contract import load_prompt_set
 from gleipnir.transcript_injection import (
     ROLES,
     balanced_choices,

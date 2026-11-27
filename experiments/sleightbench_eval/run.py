@@ -27,12 +27,12 @@ from typing import Any
 from experiments.release_serving.targets import TARGETS
 from experiments.release_serving.validate import rows as workload_rows
 from experiments.sleightbench_eval import benchmark
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from gleipnir.data.monitoring import read_rows, write_json
 from gleipnir.evaluation.http_score import score_batch
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
 EXPERIMENT = Path(__file__).parent
-ROOT = EXPERIMENT.parents[1]
+ROOT = next(p for p in EXPERIMENT.resolve().parents if (p / "pyproject.toml").is_file())
 CONFIG = json.loads((EXPERIMENT / "config.json").read_text())
 RELEASE = "release"
 DATA = ROOT / CONFIG["upstream"]["data_root"]

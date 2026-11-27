@@ -22,10 +22,11 @@ from gleipnir.campaigns.monitoring import evaluation
 from gleipnir.campaigns.monitoring.contract import Campaign
 from gleipnir.campaigns.runtime import training_environment
 from gleipnir.data.monitoring import file_hash, read_rows, write_json
+from gleipnir.repository import repo_root
 
 from .metrics import row_fit
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 NAME = "final-training-fit02"
 SLOT = Path("/tmp/gleipnir-merged/teacher-disagreement-sweep")
 

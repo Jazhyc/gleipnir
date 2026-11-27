@@ -14,6 +14,7 @@ from gleipnir.flashqla_training import (
     make_flashqla_kernel,
     make_precision_boundary,
 )
+from gleipnir.repository import repo_root
 
 
 def validation_reference(
@@ -203,7 +204,7 @@ def composite_native_fp4_sdpa_reference(
         packed_attention_backend="sdpa",
         expected_sha256=SDPA_REFERENCE_SHA256,
     )
-    fp4_path = Path(__file__).resolve().parents[3] / REFERENCE
+    fp4_path = repo_root(__file__) / REFERENCE
     fp4_contents = fp4_path.read_bytes()
     fp4_metadata = json.loads(fp4_contents)
     validate_native_fp4_reference(

@@ -17,7 +17,6 @@ from pathlib import Path
 import httpx
 
 from experiments.b200_vllm031.runtime import candidate_environment
-from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from gleipnir.data.monitoring import (
     digest,
     file_hash,
@@ -33,9 +32,11 @@ from gleipnir.evaluation.injection_presence import (
     summarize,
     trajectory,
 )
+from gleipnir.repository import repo_root
 from gleipnir.serving.monitor_score import validate_score_response
+from gleipnir.teachers.prompt_contract import load_prompt_set
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).resolve().parent
 CONFIG = HERE / "config.json"
 ACTIVE = ROOT / "results/b200_attention_gdn_serving/server.json"

@@ -15,6 +15,7 @@ import triton.language as tl
 
 from gleipnir.nvidia_mxfp8_attention import _cudnn
 from gleipnir.nvidia_mxfp8_fused_quantize import _scale
+from gleipnir.repository import repo_root
 from gleipnir.serving_mxfp8_source import hardware_exp2_source
 
 MAX_BATCH = 128
@@ -200,7 +201,7 @@ def forward_plan(device: torch.device):
         source = hardware_exp2_source(Path(original.__file__).read_text())
         digest = hashlib.sha256(source.encode()).hexdigest()
         target = (
-            Path(__file__).resolve().parents[3]
+            repo_root(__file__)
             / ".cache/kernels/nvidia_mxfp8/generated"
             / ("serving_exp2_" + digest + ".py")
         )

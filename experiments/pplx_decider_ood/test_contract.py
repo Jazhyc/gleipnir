@@ -7,7 +7,9 @@ import pandas as pd
 from experiments.pplx_decider_ood.run import load_question, stable_sha256
 from experiments.pplx_decider_ood.summarize import ranking
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 CONFIG = json.loads((ROOT / "experiments/pplx_decider_ood/config.json").read_text())
 
 

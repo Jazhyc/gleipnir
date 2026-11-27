@@ -4,7 +4,9 @@ import yaml
 
 from experiments.b200_training_trim.prepare import CONTROL, arm_config
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 
 
 def test_arm_adds_only_the_trim_to_the_control() -> None:

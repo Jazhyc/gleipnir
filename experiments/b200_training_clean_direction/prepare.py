@@ -8,8 +8,9 @@ from collections import Counter
 from pathlib import Path
 
 from gleipnir.data.monitoring import file_hash, read_rows, write_json, write_rows
+from gleipnir.repository import repo_root
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
 HERE = Path(__file__).parent
 CONFIG = HERE / "config.json"
 

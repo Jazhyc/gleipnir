@@ -28,6 +28,7 @@ from gleipnir.evaluation.binary import metric_views
 from gleipnir.evaluation.calibration import binary_calibration
 from gleipnir.evaluation.campaign import EvaluationContext, canary, render
 from gleipnir.evaluation.http_score import score_batch
+from gleipnir.repository import experiment_dir
 
 from .contract import Campaign
 
@@ -245,7 +246,7 @@ async def optimized(ctx: Campaign) -> None:
     scheduler_binding = {
         "upstream_sha256": file_hash(Path(inspect.getfile(scheduler))),
         "integration_sha256": file_hash(
-            ctx.root / "experiments/b200_vllm031/scheduler.py"
+            experiment_dir("b200_vllm031", ctx.root) / "scheduler.py"
         ),
     }
     if scheduler_binding != selection["scheduler_binding"]:

@@ -16,7 +16,9 @@ from experiments.flint_ood.interface import (
     template_changed_user_text,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").is_file()
+)
 INPUT = "data/tool_trajectory_monitoring/teacher_ood_benchmark/prompts.jsonl"
 INPUT_SHA256 = "fa4b0d917e51eb91a52efa93cddf0eb154b88993269c97cfdb161c42680136a9"
 QWEN_TOTAL, QWEN_MAX = 60_539_619, 30_382

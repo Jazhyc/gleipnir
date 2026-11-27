@@ -20,7 +20,7 @@ from experiments.adversarial_monitor_aware import analyze, leak
 HERE = Path(__file__).resolve().parent
 CONFIG = json.loads((HERE / "config.json").read_text())
 CHECKOUT = (
-    HERE.parents[1]
+    next(p for p in HERE.parents if (p / "pyproject.toml").is_file())
     / "data/adversarial_cheating_pilot/impossiblebench/src/impossiblebench"
 )
 

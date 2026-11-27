@@ -6,11 +6,13 @@ import hashlib
 import json
 from pathlib import Path
 
+from gleipnir.repository import experiment_dir
+
 
 def selected_score_reference(root: Path) -> dict:
     """Verify the selected score workload, receipts and every saved repeat."""
     selection = json.loads(
-        (root / "experiments/b200_inference_benchmark/baseline.json").read_text()
+        (experiment_dir("b200_inference_benchmark", root) / "baseline.json").read_text()
     )
     if selection.get("endpoint") != "/v1/monitor/score":
         raise ValueError("selected reference is not a monitoring score server")
@@ -45,7 +47,9 @@ def selected_serving_default(
 ) -> tuple[dict, list[str]]:
     """Resolve the accepted current recipe separately from frozen comparisons."""
     selection = json.loads(
-        (root / "experiments/b200_inference_benchmark/serving_default.json").read_text()
+        (
+            experiment_dir("b200_inference_benchmark", root) / "serving_default.json"
+        ).read_text()
     )
     if selection["quality_status"] != "user_accepted_finite":
         raise ValueError("serving default lacks explicit finite-quality acceptance")
@@ -153,7 +157,7 @@ def selected_host_components(
 ) -> tuple[dict | None, dict | None]:
     """Bind selected receipts and preserve the actual resident frontend path."""
     selection = json.loads(
-        (root / "experiments/b200_inference_benchmark/baseline.json").read_text()
+        (experiment_dir("b200_inference_benchmark", root) / "baseline.json").read_text()
     )
     frontend = selection.get("frontend")
     host = selection.get("host_wrapper")
