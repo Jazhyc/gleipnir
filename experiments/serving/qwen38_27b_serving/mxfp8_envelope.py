@@ -15,7 +15,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from gleipnir.serving.stack.long_context_envelope import (
+from experiments.b200_context_million.envelope import (
     CHUNK,
     HISTORIES,
     IRREGULAR,
@@ -32,7 +32,7 @@ def main() -> None:
     import torch
 
     import gleipnir.serving.mxfp8 as base
-    from experiments.serving.qwen38_27b_serving.mxfp8_canary import (
+    from experiments.qwen38_27b_serving.mxfp8_canary import (
         attention_shape,
         quantized_attention,
     )
@@ -49,10 +49,10 @@ def main() -> None:
     torch.backends.cuda.matmul.allow_tf32 = False
     paths = [
         Path(__file__),
-        Path("src/gleipnir/serving/stack/long_context_envelope.py"),
+        Path("experiments/b200_context_million/envelope.py"),
         Path(base.__file__),
         Path("src/gleipnir/serving/mxfp8_geometry.py"),
-        Path("experiments/serving/qwen38_27b_serving/mxfp8_canary.py"),
+        Path("experiments/qwen38_27b_serving/mxfp8_canary.py"),
         Path("experiments/b200_attention_gdn_serving/mxfp8_reference.py"),
     ]
     report = {

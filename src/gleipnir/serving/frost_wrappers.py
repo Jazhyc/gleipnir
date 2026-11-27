@@ -159,7 +159,7 @@ def install_control(root: Path, validation: str) -> None:
 
 def enable_worker_control(root: Path, validation: str) -> None:
     """Add opt-in initialization/RPC without changing the compiled worker class."""
-    from gleipnir.serving.stack.workers.native_output import (
+    from experiments.b200_attention_gdn_serving.swiglu_native_output_worker import (
         NativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker as Worker,
     )
 

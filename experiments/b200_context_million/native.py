@@ -7,7 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from gleipnir.serving.stack.long_context_envelope import (
+from experiments.b200_context_million.envelope import (
     CHUNK,
     HISTORIES,
     IRREGULAR,
