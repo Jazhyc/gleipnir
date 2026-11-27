@@ -3,15 +3,15 @@
 import functools
 import json
 import os
+from pathlib import Path
 from typing import Any
 
 import torch
 
 from experiments.b200_frost_inference.worker import FrostAuditWorker
-from gleipnir.repository import repo_root
 from gleipnir.serving_precision import describe_attention_cache
 
-ROOT = repo_root(__file__)
+ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "results/b200_attention_gdn_serving"
 
 
